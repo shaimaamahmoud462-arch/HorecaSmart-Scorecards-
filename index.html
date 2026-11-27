@@ -648,87 +648,15 @@
       `;
     }
 
-    async function sbFetch(table, queryStr = "") {
-      const url = `${SUPABASE_URL}/rest/v1/${table}${queryStr ? "?" + queryStr : ""}`;
-      const res = await fetch(url, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      if (!res.ok) throw new Error(`${table}: HTTP ${res.status}`);
-      return res.json();
-    }
-
-    function buildDateParams(colName, fromVal, toVal) {
-      const parts = [];
-      if (fromVal) parts.push(`${colName}=gte.${encodeURIComponent(fromVal)}`);
-      if (toVal) parts.push(`${colName}=lte.${encodeURIComponent(toVal)}`);
-      return parts.join("&");
-    }
-
-    function computeFromOdooTables(glRows, invRows, saleRows, budgetRow, kpiViewRow) {
-      const base = kpiViewRow || {};
-      const manualBudget = Number(budgetRow?.budget_amount ?? base.expenses_budget_manual ?? 1000000);
-
-      if (!glRows || glRows.length === 0) {
-        return { ...base, expenses_budget_manual: manualBudget };
-      }
-
-      const sumAccount = (prefix, mode = "balance") => {
-        return glRows.reduce((acc, r) => {
-          const code = String(r.account_code || r.code || "");
-          if (!code.startsWith(prefix)) return acc;
-          const debit = Number(r.debit || 0);
-          const credit = Number(r.credit || 0);
-          const bal = r.balance !== undefined && r.balance !== null ? Number(r.balance) : (debit - credit);
-          if (mode === "credit_minus_debit") return acc + (credit - debit);
-          if (mode === "debit_minus_credit") return acc + (debit - credit);
-          return acc + bal;
-        }, 0);
-      };
-
-      const total_payable_local = sumAccount("2201001", "credit_minus_debit");
-      const total_receivable_gl = sumAccount("1204001", "debit_minus_credit");
-      const pending_custodies_gl = sumAccount("1209001", "debit_minus_credit");
-      const pending_loans_gl = sumAccount("1209002", "debit_minus_credit");
-      const expenses_actual = sumAccount("5", "debit_minus_credit");
-
-      const unreconciled_bills_count = Array.isArray(invRows)
-        ? invRows.filter(i => String(i.move_type || "").includes("in_") && i.reconciled === false).length
-        : Number(base.unreconciled_bills_count || 0);
-
-      const unreconciled_invoices_count = Array.isArray(invRows)
-        ? invRows.filter(i => String(i.move_type || "").includes("out_") && i.reconciled === false).length
-        : Number(base.unreconciled_invoices_count || 0);
-
-      const orders_to_invoice_before_today = Array.isArray(saleRows)
-        ? saleRows.filter(o => String(o.invoice_status || "") === "to invoice").length
-        : Number(base.orders_to_invoice_before_today || 0);
-
-      const expenses_budget_over_pct = manualBudget > 0 ? (expenses_actual / manualBudget) * 100 : 0;
-      const over_budget_amount = Math.max(0, expenses_actual - manualBudget);
-
-      return {
-        ...base,
-        total_payable_local,
-        total_receivable_gl,
-        pending_custodies_gl,
-        pending_loans_gl,
-        expenses_actual,
-        expenses_budget_manual: manualBudget,
-        expenses_budget_over_pct,
-        over_budget_amount,
-        unreconciled_bills_count,
-        unreconciled_invoices_count,
-        orders_to_invoice_before_today
-      };
-    }
-
     function renderAllCards() {
       const d = computedSummary || {};
+      const fromVal = document.getElementById("fromDateInput").value;
+      const toVal = document.getElementById("toDateInput").value;
+      const isFiltered = Boolean(fromVal || toVal);
+      const liveTag = isFiltered ? "Filtered SB" : "Odoo/SB";
+
       if (d.expenses_budget_manual !== undefined && document.activeElement !== document.getElementById("budgetInput")) {
-        document.getElementById("budgetInput").value = d.expenses_budget_manual || 1000000;
+        document.getElementById("budgetInput").value = d.expenses_budget_manual || 100000;
       }
 
       const f = PDF_REF.finance;
@@ -738,16 +666,16 @@
         : `<span class="status-pill pill-ok">${t("withinBudget")}</span>`;
 
       document.getElementById("financeGrid").innerHTML = [
-        card({ title: "Total Payable", note: `GL 2201001 • 21/11 Ref: ${f.payableCurr}`, source: "Odoo/SB", value: fmtNum(d.total_payable_local, " EGP"), prev: f.payablePrev }),
-        card({ title: "Total Receivable", note: `GL 1204001 • 21/11 Ref: ${f.receivableCurr}`, source: "Odoo/SB", value: fmtNum(d.total_receivable_gl, " EGP"), prev: f.receivablePrev }),
-        card({ title: "Pending Custodies", note: `GL 1209001 • 21/11 Ref: ${f.custodiesCurr}`, source: "Odoo/SB", value: fmtNum(d.pending_custodies_gl, " EGP"), prev: f.custodiesPrev }),
-        card({ title: "Pending Loans", note: `GL 1209002 • 21/11 Ref: ${f.loansCurr}`, source: "Odoo/SB", value: fmtNum(d.pending_loans_gl, " EGP"), prev: f.loansPrev }),
-        card({ title: "Unreconciled Bills", note: currentLang === "ar" ? "فواتير الموردين غير المسواة" : "Unreconciled vendor bills", source: "Odoo/SB", value: fmtInt(d.unreconciled_bills_count), prev: f.unrecBillsPrev }),
-        card({ title: "Unreconciled Invoices", note: `21/11 Ref: ${f.unrecInvCurr}`, source: "Odoo/SB", value: fmtInt(d.unreconciled_invoices_count), prev: f.unrecInvPrev }),
-        card({ title: "Orders To Invoice", note: `21/11 Ref: ${f.ordersToInvCurr}`, source: "Odoo/SB", value: fmtInt(d.orders_to_invoice_before_today), prev: f.ordersToInvPrev }),
-        card({ title: "Invoicing > 11:00 AM", note: currentLang === "ar" ? "بعد 11 صباحًا" : "Created after 11:00 AM", source: "Odoo/SB", value: fmtNum(d.invoicing_after_11am_pct, "%"), prev: f.inv11Prev }),
-        card({ title: "Invoicing > 24H", note: currentLang === "ar" ? "تأخر عن التوصيل (بدون الجمعة)" : "Delayed vs delivery (excl. Fri)", source: "Odoo/SB", value: fmtNum(d.invoicing_over_24h_excl_friday_pct, "%"), prev: f.inv24Prev }),
-        card({ title: "Expenses Budget", note: `Actual: ${fmtNum(d.expenses_actual, " EGP")} • 21/11: ${f.expBudgetCurr}`, source: "Odoo/SB", value: fmtNum(overPct, "%"), prev: f.expBudgetPrev, pill: budgetPill }),
+        card({ title: "Total Payable", note: `GL 2201001 • 21/11 Ref: ${f.payableCurr}`, source: liveTag, value: fmtNum(d.total_payable_local, " EGP"), prev: f.payablePrev }),
+        card({ title: "Total Receivable", note: `GL 1204001 • 21/11 Ref: ${f.receivableCurr}`, source: liveTag, value: fmtNum(d.total_receivable_gl, " EGP"), prev: f.receivablePrev }),
+        card({ title: "Pending Custodies", note: `GL 1209001 • 21/11 Ref: ${f.custodiesCurr}`, source: liveTag, value: fmtNum(d.pending_custodies_gl, " EGP"), prev: f.custodiesPrev }),
+        card({ title: "Pending Loans", note: `GL 1209002 • 21/11 Ref: ${f.loansCurr}`, source: liveTag, value: fmtNum(d.pending_loans_gl, " EGP"), prev: f.loansPrev }),
+        card({ title: "Unreconciled Bills", note: currentLang === "ar" ? "فواتير الموردين غير المسواة" : "Unreconciled vendor bills", source: liveTag, value: fmtInt(d.unreconciled_bills_count), prev: f.unrecBillsPrev }),
+        card({ title: "Unreconciled Invoices", note: `21/11 Ref: ${f.unrecInvCurr}`, source: liveTag, value: fmtInt(d.unreconciled_invoices_count), prev: f.unrecInvPrev }),
+        card({ title: "Orders To Invoice", note: `21/11 Ref: ${f.ordersToInvCurr}`, source: liveTag, value: fmtInt(d.orders_to_invoice_before_today), prev: f.ordersToInvPrev }),
+        card({ title: "Invoicing > 11:00 AM", note: currentLang === "ar" ? "بعد 11 صباحًا" : "Created after 11:00 AM", source: liveTag, value: fmtNum(d.invoicing_after_11am_pct, "%"), prev: f.inv11Prev }),
+        card({ title: "Invoicing > 24H", note: currentLang === "ar" ? "تأخر عن التوصيل (بدون الجمعة)" : "Delayed vs delivery (excl. Fri)", source: liveTag, value: fmtNum(d.invoicing_over_24h_excl_friday_pct, "%"), prev: f.inv24Prev }),
+        card({ title: "Expenses Budget", note: `Actual: ${fmtNum(d.expenses_actual, " EGP")} • 21/11: ${f.expBudgetCurr}`, source: liveTag, value: fmtNum(overPct, "%"), prev: f.expBudgetPrev, pill: budgetPill }),
         card({ title: "Cancelled Invoices", note: "21-11-2026 Ref", source: "Ref 21/11", value: f.cancelledCurr, prev: f.cancelledPrev }),
         card({ title: "Journals No Partner", note: "21-11-2026 Ref", source: "Ref 21/11", value: f.journalsNoPartnerCurr, prev: f.journalsNoPartnerPrev })
       ].join("");
@@ -759,8 +687,8 @@
         card({ title: "DSO Horeca (Credit)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_credit_days, " d"), prev: c.dsoHorecaCreditPrev }),
         card({ title: "DSO Horeca (Cash)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_cash_days, " d"), prev: c.dsoHorecaCashPrev }),
         card({ title: "DSO Other", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_other_days, " d"), prev: c.dsoOtherPrev }),
-        card({ title: "Total Collected", note: "In millions (EGP)", source: "Odoo/SB", value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
-        card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: "Odoo/SB", value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
+        card({ title: "Total Collected", note: "In millions (EGP)", source: liveTag, value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
+        card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: liveTag, value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
         card({ title: "Collection Variance", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.collVarCurr, prev: c.collVarPrev }),
         card({ title: "Unpaid Cash Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidHorecaCurr, prev: c.unpaidHorecaPrev }),
         card({ title: "Unpaid Cash MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidMasCurr, prev: c.unpaidMasPrev }),
@@ -771,9 +699,9 @@
       const s = PDF_REF.sales;
       document.getElementById("salesGrid").innerHTML = [
         card({ title: "Active Customers", note: "Target: 650", source: "Ref 21/11", value: s.activeCustCurr, prev: s.activeCustPrev }),
-        card({ title: "GMV MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.gmvMasCurr, prev: s.gmvMasPrev }),
+        card({ title: "GMV MAS", note: isFiltered ? `Total SO GMV in period: ${fmtNum(d.so_total_gmv_millions, " M")}` : "21-11-2026 Ref", source: isFiltered ? "SO Live" : "Ref 21/11", value: isFiltered ? fmtNum(d.so_total_gmv_millions, " M") : s.gmvMasCurr, prev: s.gmvMasPrev }),
         card({ title: "MAS Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.masCustCurr, prev: s.masCustPrev }),
-        card({ title: "MAS Orders", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.masOrdersCurr, prev: s.masOrdersPrev }),
+        card({ title: "MAS Orders", note: isFiltered ? `Total SO Orders in period: ${fmtInt(d.so_total_orders)}` : "21-11-2026 Ref", source: isFiltered ? "SO Live" : "Ref 21/11", value: isFiltered ? fmtInt(d.so_total_orders) : s.masOrdersCurr, prev: s.masOrdersPrev }),
         card({ title: "Products Sold MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.prodSoldMasCurr, prev: s.prodSoldMasPrev }),
         card({ title: "GMV Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.gmvHorecaCurr, prev: s.gmvHorecaPrev }),
         card({ title: "Horeca Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.horecaCustCurr, prev: s.horecaCustPrev }),
@@ -824,47 +752,45 @@
     }
 
     async function loadScorecard() {
-      const fromVal = document.getElementById("fromDateInput").value;
-      const toVal = document.getElementById("toDateInput").value;
+      const fromVal = document.getElementById("fromDateInput").value || null;
+      const toVal = document.getElementById("toDateInput").value || null;
       const badge = document.getElementById("dateFilterBadge");
       const statusText = document.getElementById("statusText");
 
       badge.textContent = (!fromVal && !toVal) ? t("allDates") : `${fromVal || "..."} → ${toVal || "..."}`;
-      statusText.textContent = "Querying Supabase with Odoo date range...";
+      statusText.textContent = "Querying Supabase RPC get_scorecard_by_date...";
 
       try {
-        const [kpiRows, budgetRows] = await Promise.all([
-          sbFetch("weekly_scorecard_kpis", "select=*").catch(() => []),
-          sbFetch("budget_settings", "select=*&metric_key=eq.expenses_budget").catch(() => [])
+        const [viewRes, rpcRes] = await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/weekly_scorecard_kpis?select=*`, {
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`
+            }
+          }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${SUPABASE_URL}/rest/v1/rpc/get_scorecard_by_date`, {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ p_from: fromVal, p_to: toVal })
+          })
         ]);
 
-        const kpiViewRow = Array.isArray(kpiRows) && kpiRows[0] ? kpiRows[0] : {};
-        const budgetRow = Array.isArray(budgetRows) && budgetRows[0] ? budgetRows[0] : null;
-
-        let glRows = [];
-        let invRows = [];
-        let saleRows = [];
-
-        if (fromVal || toVal) {
-          const glDateQ = buildDateParams("date", fromVal, toVal);
-          const invDateQ = buildDateParams("invoice_date", fromVal, toVal);
-          const saleDateQ = buildDateParams("date_order", fromVal, toVal);
-
-          [glRows, invRows, saleRows] = await Promise.all([
-            sbFetch("gl_entries", `select=*${glDateQ ? "&" + glDateQ : ""}`).catch(() => []),
-            sbFetch("invoices_bills", `select=*${invDateQ ? "&" + invDateQ : ""}`).catch(() => []),
-            sbFetch("sales_orders", `select=*${saleDateQ ? "&" + saleDateQ : ""}`).catch(() => [])
-          ]);
+        const baseView = Array.isArray(viewRes) && viewRes[0] ? viewRes[0] : {};
+        if (!rpcRes.ok) {
+          throw new Error(`RPC HTTP ${rpcRes.status}: ${await rpcRes.text()}`);
         }
+        const rpcData = await rpcRes.json();
+        computedSummary = { ...baseView, ...(rpcData || {}) };
 
-        computedSummary = computeFromOdooTables(glRows, invRows, saleRows, budgetRow, kpiViewRow);
-        const modeLabel = (fromVal || toVal)
-          ? `Filtered (${fromVal || "start"} to ${toVal || "now"}) • GL rows: ${glRows.length}`
-          : "All Dates (Scorecard View)";
-        statusText.textContent = `${modeLabel} • Updated: ${new Date().toLocaleString()}`;
+        statusText.textContent = (fromVal || toVal)
+          ? `Filtered (${fromVal || "start"} → ${toVal || "today"}) • GL matched: ${computedSummary.gl_rows_matched ?? 0}`
+          : `All Dates • Updated: ${new Date().toLocaleString()}`;
       } catch (err) {
-        computedSummary = {};
-        statusText.textContent = `Supabase Notice (${err.message})`;
+        statusText.textContent = `RPC Notice (${err.message})`;
       }
 
       renderAllCards();
