@@ -270,7 +270,7 @@
 
     <div class="toolbar-row">
       <div class="date-filter-group">
-        <span class="filter-label" id="t_dateFilterLabel">Date Filter (Applies to All):</span>
+        <span class="filter-label" id="t_dateFilterLabel">Date Filter:</span>
         <label class="date-field">
           <span id="t_fromLabel">From</span>
           <input type="date" id="fromDateInput" onchange="loadScorecard()" />
@@ -297,7 +297,7 @@
     <div class="budget-panel">
       <div>
         <div class="budget-title" id="t_budgetTitle">Manual Expenses Budget Setting</div>
-        <div class="budget-desc" id="t_budgetDesc">Updates Supabase budget_settings and recalculates budget variance immediately</div>
+        <div class="budget-desc" id="t_budgetDesc">Compares expense-type accounts only against your manual budget in Supabase</div>
       </div>
       <div class="budget-form">
         <input type="number" id="budgetInput" step="1000" placeholder="Budget amount (EGP)" />
@@ -388,13 +388,13 @@
         toEn: "English",
         refreshBtn: "Refresh Live Data",
         exportBtn: "Export CSV",
-        dateFilterLabel: "Date Filter (Applies to All):",
+        dateFilterLabel: "Date Filter:",
         fromLabel: "From",
         toLabel: "To",
         clearDateBtn: "Clear Dates",
-        allDates: "All Dates (Odoo Live)",
+        allDates: "All Dates",
         budgetTitle: "Manual Expenses Budget Setting",
-        budgetDesc: "Updates Supabase budget_settings and recalculates budget variance immediately",
+        budgetDesc: "Compares expense-type accounts only against your manual budget in Supabase",
         saveBudgetBtn: "Save Budget",
         secFinance: "1. Finance",
         rocksFinance: "Rocks Q3 (Accounting): Collection On Time ≥ 90% • DSO ≤ 35 • Due 60d ≤ 5%",
@@ -430,13 +430,13 @@
         toEn: "English",
         refreshBtn: "تحديث البيانات الحية",
         exportBtn: "تصدير CSV",
-        dateFilterLabel: "فلتر التاريخ (يُطبق على الكل):",
+        dateFilterLabel: "فلتر التاريخ:",
         fromLabel: "من",
         toLabel: "إلى",
         clearDateBtn: "إلغاء التاريخ",
-        allDates: "كل التواريخ (بيانات Odoo الحية)",
+        allDates: "كل التواريخ",
         budgetTitle: "إعداد البادجت اليدوي للمصروفات",
-        budgetDesc: "يُحدّث جدول budget_settings في Supabase ويعيد حساب نسبة البادجت فورًا",
+        budgetDesc: "يحسب إجمالي المصروفات من حسابات نوعها مصروف فقط ويقارنها بالبادجت",
         saveBudgetBtn: "حفظ البادجت",
         secFinance: "1. المالية والحسابات (Finance)",
         rocksFinance: "مستهدفات Q3: تحصيل في الموعد ≥ 90% • DSO ≤ 35 • متأخرات 60 يوم ≤ 5%",
@@ -486,8 +486,7 @@
         cancelledCurr: "0 Invoice", cancelledPrev: "2",
         expBudgetCurr: "160% over", expBudgetPrev: "101% over",
         loansCurr: "1,7 M", loansPrev: "1,7 M",
-        inv11Prev: "75%",
-        journalsNoPartnerCurr: "6", journalsNoPartnerPrev: "8"
+        inv11Prev: "75%"
       },
       collection: {
         dsoMasCreditPrev: "37 days", dsoMasCashPrev: "33 days",
@@ -653,7 +652,7 @@
       const fromVal = document.getElementById("fromDateInput").value;
       const toVal = document.getElementById("toDateInput").value;
       const isFiltered = Boolean(fromVal || toVal);
-      const liveTag = isFiltered ? "Filtered SB" : "Odoo/SB";
+      const periodTag = isFiltered ? "Filtered SB" : "Odoo/SB";
 
       if (d.expenses_budget_manual !== undefined && document.activeElement !== document.getElementById("budgetInput")) {
         document.getElementById("budgetInput").value = d.expenses_budget_manual || 100000;
@@ -665,19 +664,91 @@
         ? `<span class="status-pill pill-bad">${t("overBudget")} (${fmtNum(d.over_budget_amount, " EGP")})</span>`
         : `<span class="status-pill pill-ok">${t("withinBudget")}</span>`;
 
+      const inv11Count = fmtInt(d.invoicing_after_11am_count);
+      const inv11Pct = fmtNum(d.invoicing_after_11am_pct, "%");
+
+      const inv24Count = fmtInt(d.invoicing_over_24h_count);
+      const inv24Pct = fmtNum(d.invoicing_over_24h_excl_friday_pct, "%");
+
       document.getElementById("financeGrid").innerHTML = [
-        card({ title: "Total Payable", note: `GL 2201001 • 21/11 Ref: ${f.payableCurr}`, source: liveTag, value: fmtNum(d.total_payable_local, " EGP"), prev: f.payablePrev }),
-        card({ title: "Total Receivable", note: `GL 1204001 • 21/11 Ref: ${f.receivableCurr}`, source: liveTag, value: fmtNum(d.total_receivable_gl, " EGP"), prev: f.receivablePrev }),
-        card({ title: "Pending Custodies", note: `GL 1209001 • 21/11 Ref: ${f.custodiesCurr}`, source: liveTag, value: fmtNum(d.pending_custodies_gl, " EGP"), prev: f.custodiesPrev }),
-        card({ title: "Pending Loans", note: `GL 1209002 • 21/11 Ref: ${f.loansCurr}`, source: liveTag, value: fmtNum(d.pending_loans_gl, " EGP"), prev: f.loansPrev }),
-        card({ title: "Unreconciled Bills", note: currentLang === "ar" ? "فواتير الموردين غير المسواة" : "Unreconciled vendor bills", source: liveTag, value: fmtInt(d.unreconciled_bills_count), prev: f.unrecBillsPrev }),
-        card({ title: "Unreconciled Invoices", note: `21/11 Ref: ${f.unrecInvCurr}`, source: liveTag, value: fmtInt(d.unreconciled_invoices_count), prev: f.unrecInvPrev }),
-        card({ title: "Orders To Invoice", note: `21/11 Ref: ${f.ordersToInvCurr}`, source: liveTag, value: fmtInt(d.orders_to_invoice_before_today), prev: f.ordersToInvPrev }),
-        card({ title: "Invoicing > 11:00 AM", note: currentLang === "ar" ? "بعد 11 صباحًا" : "Created after 11:00 AM", source: liveTag, value: fmtNum(d.invoicing_after_11am_pct, "%"), prev: f.inv11Prev }),
-        card({ title: "Invoicing > 24H", note: currentLang === "ar" ? "تأخر عن التوصيل (بدون الجمعة)" : "Delayed vs delivery (excl. Fri)", source: liveTag, value: fmtNum(d.invoicing_over_24h_excl_friday_pct, "%"), prev: f.inv24Prev }),
-        card({ title: "Expenses Budget", note: `Actual: ${fmtNum(d.expenses_actual, " EGP")} • 21/11: ${f.expBudgetCurr}`, source: liveTag, value: fmtNum(overPct, "%"), prev: f.expBudgetPrev, pill: budgetPill }),
-        card({ title: "Cancelled Invoices", note: "21-11-2026 Ref", source: "Ref 21/11", value: f.cancelledCurr, prev: f.cancelledPrev }),
-        card({ title: "Journals No Partner", note: "21-11-2026 Ref", source: "Ref 21/11", value: f.journalsNoPartnerCurr, prev: f.journalsNoPartnerPrev })
+        card({
+          title: "Total Payable",
+          note: currentLang === "ar" ? "رصيد General Ledger التراكمي (خارج فلتر التاريخ)" : "General Ledger balance (outside date filter)",
+          source: "GL Report",
+          value: fmtNum(d.total_payable_local, " EGP"),
+          prev: f.payablePrev
+        }),
+        card({
+          title: "Total Receivable",
+          note: currentLang === "ar" ? "رصيد General Ledger التراكمي (خارج فلتر التاريخ)" : "General Ledger balance (outside date filter)",
+          source: "GL Report",
+          value: fmtNum(d.total_receivable_gl, " EGP"),
+          prev: f.receivablePrev
+        }),
+        card({
+          title: "Pending Custodies",
+          note: currentLang === "ar" ? "إجمالي حسابات (عهد)" : "Total from accounts named (عهد)",
+          source: periodTag,
+          value: fmtNum(d.pending_custodies_gl, " EGP"),
+          prev: f.custodiesPrev
+        }),
+        card({
+          title: "Pending Loans",
+          note: currentLang === "ar" ? "إجمالي حسابات (سلف)" : "Total from accounts named (سلف)",
+          source: periodTag,
+          value: fmtNum(d.pending_loans_gl, " EGP"),
+          prev: f.loansPrev
+        }),
+        card({
+          title: "Unreconciled Bills",
+          note: currentLang === "ar" ? "حسب invoice_has_outstanding = true" : "Where invoice_has_outstanding = true",
+          source: periodTag,
+          value: fmtInt(d.unreconciled_bills_count),
+          prev: f.unrecBillsPrev
+        }),
+        card({
+          title: "Unreconciled Invoices",
+          note: currentLang === "ar" ? "حسب invoice_has_outstanding = true" : "Where invoice_has_outstanding = true",
+          source: periodTag,
+          value: fmtInt(d.unreconciled_invoices_count),
+          prev: f.unrecInvPrev
+        }),
+        card({
+          title: "Orders To Invoice",
+          note: currentLang === "ar" ? "باستثناء توصيل اليوم أو أيام قادمة" : "Excludes delivery today or future dates",
+          source: periodTag,
+          value: fmtInt(d.orders_to_invoice_before_today),
+          prev: f.ordersToInvPrev
+        }),
+        card({
+          title: "Invoicing > 11:00 AM",
+          note: currentLang === "ar" ? `النسبة: ${inv11Pct} • عدد الفواتير بعد 11 ص` : `Rate: ${inv11Pct} • Invoices created after 11:00 AM`,
+          source: periodTag,
+          value: inv11Count,
+          prev: f.inv11Prev
+        }),
+        card({
+          title: "Invoicing > 24H",
+          note: currentLang === "ar" ? `النسبة: ${inv24Pct} • محسوب بتاريخ التوصيل (بدون الجمعة)` : `Rate: ${inv24Pct} • By delivery date (excl. Fri)`,
+          source: periodTag,
+          value: inv24Count,
+          prev: f.inv24Prev
+        }),
+        card({
+          title: "Expenses Budget",
+          note: `Expenses only: ${fmtNum(d.expenses_actual, " EGP")} • 21/11: ${f.expBudgetCurr}`,
+          source: periodTag,
+          value: fmtNum(overPct, "%"),
+          prev: f.expBudgetPrev,
+          pill: budgetPill
+        }),
+        card({
+          title: "Cancelled Invoices",
+          note: currentLang === "ar" ? "مفلترة حسب Accounting Date" : "Filtered by Accounting Date",
+          source: periodTag,
+          value: fmtInt(d.cancelled_invoices_count),
+          prev: f.cancelledPrev
+        })
       ].join("");
 
       const c = PDF_REF.collection;
@@ -687,8 +758,8 @@
         card({ title: "DSO Horeca (Credit)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_credit_days, " d"), prev: c.dsoHorecaCreditPrev }),
         card({ title: "DSO Horeca (Cash)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_cash_days, " d"), prev: c.dsoHorecaCashPrev }),
         card({ title: "DSO Other", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_other_days, " d"), prev: c.dsoOtherPrev }),
-        card({ title: "Total Collected", note: "In millions (EGP)", source: liveTag, value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
-        card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: liveTag, value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
+        card({ title: "Total Collected", note: "In millions (EGP)", source: periodTag, value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
+        card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: periodTag, value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
         card({ title: "Collection Variance", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.collVarCurr, prev: c.collVarPrev }),
         card({ title: "Unpaid Cash Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidHorecaCurr, prev: c.unpaidHorecaPrev }),
         card({ title: "Unpaid Cash MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidMasCurr, prev: c.unpaidMasPrev }),
