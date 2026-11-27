@@ -47,7 +47,7 @@
       text-align: left;
     }
 
-    .container { max-width: 1360px; margin: 0 auto; }
+    .container { max-width: 1380px; margin: 0 auto; }
 
     .header-card, .filter-bar, .section-card {
       background: var(--bg-card);
@@ -212,6 +212,9 @@
       <button class="tab-btn" data-sec="finance" onclick="setSection('finance', this)">1. Finance</button>
       <button class="tab-btn" data-sec="collection" onclick="setSection('collection', this)">2. Collection</button>
       <button class="tab-btn" data-sec="sales" onclick="setSection('sales', this)">3. Sales</button>
+      <button class="tab-btn" data-sec="purchase" onclick="setSection('purchase', this)">4. Purchase</button>
+      <button class="tab-btn" data-sec="logistics" onclick="setSection('logistics', this)">5. Logistics</button>
+      <button class="tab-btn" data-sec="marketing_cs" onclick="setSection('marketing_cs', this)">6 & 7. Marketing & CS</button>
     </div>
 
     <div class="section-card" id="sec-finance">
@@ -228,12 +231,29 @@
       <h3 style="margin-top:0;">3. Sales</h3>
       <div class="grid" id="salesGrid"></div>
     </div>
+
+    <div class="section-card" id="sec-purchase">
+      <h3 style="margin-top:0;">4. Purchase</h3>
+      <div class="grid" id="purchaseGrid"></div>
+    </div>
+
+    <div class="section-card" id="sec-logistics">
+      <h3 style="margin-top:0;">5. Logistics</h3>
+      <div class="grid" id="logisticsGrid"></div>
+    </div>
+
+    <div class="section-card" id="sec-marketing_cs">
+      <h3 style="margin-top:0;">6 & 7. Marketing & CS</h3>
+      <div class="grid" id="marketingCsGrid"></div>
+    </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://zezuokldvfwixzqgzfot.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplenVva2xkdmZ3aXh6cWd6Zm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU3OTMzMzksImV4cCI6MjExMTM2OTMzOX0.pxm-APp3U3v88a06vpeh7Ca9PDq0xjvyivPha7vEW-0";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing_cs"];
 
     // higherIsBetter: true = زيادة الرقم خضراء ونقصانه أحمر | false = زيادة الرقم حمراء ونقصانه أخضر
     const PREV_BENCHMARKS = {
@@ -251,7 +271,17 @@
       total_collected_millions: 14.5,
       due_over_60_days_millions: 2.1,
       so_total_orders: 1200,
-      so_total_gmv_millions: 85.0
+      so_total_gmv_millions: 85.0,
+      purchase_orders_count: 180,
+      purchase_total_millions: 22.0,
+      open_rfq_count: 14,
+      delivered_orders_count: 1120,
+      pending_deliveries_count: 35,
+      on_time_delivery_pct: 92,
+      leads_opportunities_count: 95,
+      won_deals_count: 42,
+      open_tickets_count: 18,
+      csat_score_pct: 89
     };
 
     function fmtNum(val, decimals = 2) {
@@ -309,9 +339,9 @@
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
       if (btn) btn.classList.add("active");
 
-      ["finance", "collection", "sales"].forEach(id => {
+      SECTIONS.forEach(id => {
         const el = document.getElementById(`sec-${id}`);
-        el.style.display = (sec === "all" || sec === id) ? "block" : "none";
+        if (el) el.style.display = (sec === "all" || sec === id) ? "block" : "none";
       });
     }
 
@@ -480,6 +510,105 @@
           prevKey: "so_total_gmv_millions",
           higherIsBetter: true,
           footerText: "Gross Sales (Up = Green)"
+        })
+      ].join("");
+
+      document.getElementById("purchaseGrid").innerHTML = [
+        cardHtml({
+          title: "Purchase Orders",
+          sub: "Confirmed POs • HORECA + MAS",
+          valueText: fmtNum(data.purchase_orders_count, 0),
+          currentNum: data.purchase_orders_count,
+          prevKey: "purchase_orders_count",
+          higherIsBetter: true,
+          footerText: "Purchase Orders"
+        }),
+        cardHtml({
+          title: "Purchase Spend",
+          sub: "Total PO value in millions",
+          valueText: `${fmtNum(data.purchase_total_millions, 2)}M EGP`,
+          currentNum: data.purchase_total_millions,
+          prevKey: "purchase_total_millions",
+          higherIsBetter: false,
+          footerText: "Spend (Up = Red)"
+        }),
+        cardHtml({
+          title: "Open RFQs",
+          sub: "Pending vendor quotations",
+          valueText: fmtNum(data.open_rfq_count, 0),
+          currentNum: data.open_rfq_count,
+          prevKey: "open_rfq_count",
+          higherIsBetter: false,
+          footerText: "Open RFQs (Up = Red)"
+        })
+      ].join("");
+
+      document.getElementById("logisticsGrid").innerHTML = [
+        cardHtml({
+          title: "Delivered Orders",
+          sub: "Completed deliveries • HORECA + MAS",
+          valueText: fmtNum(data.delivered_orders_count, 0),
+          currentNum: data.delivered_orders_count,
+          prevKey: "delivered_orders_count",
+          higherIsBetter: true,
+          footerText: "Delivered (Up = Green)"
+        }),
+        cardHtml({
+          title: "Pending Deliveries",
+          sub: "Awaiting dispatch or delivery",
+          valueText: fmtNum(data.pending_deliveries_count, 0),
+          currentNum: data.pending_deliveries_count,
+          prevKey: "pending_deliveries_count",
+          higherIsBetter: false,
+          footerText: "Pending (Up = Red)"
+        }),
+        cardHtml({
+          title: "On-Time Delivery",
+          sub: "Delivered on or before due date",
+          valueText: `${fmtNum(data.on_time_delivery_pct, 2)}%`,
+          currentNum: data.on_time_delivery_pct,
+          prevKey: "on_time_delivery_pct",
+          higherIsBetter: true,
+          footerText: "OTD Rate (Up = Green)"
+        })
+      ].join("");
+
+      document.getElementById("marketingCsGrid").innerHTML = [
+        cardHtml({
+          title: "Leads & Opportunities",
+          sub: "Active pipeline • HORECA + MAS",
+          valueText: fmtNum(data.leads_opportunities_count, 0),
+          currentNum: data.leads_opportunities_count,
+          prevKey: "leads_opportunities_count",
+          higherIsBetter: true,
+          footerText: "Pipeline (Up = Green)"
+        }),
+        cardHtml({
+          title: "Won Deals",
+          sub: "Closed won opportunities",
+          valueText: fmtNum(data.won_deals_count, 0),
+          currentNum: data.won_deals_count,
+          prevKey: "won_deals_count",
+          higherIsBetter: true,
+          footerText: "Won Deals (Up = Green)"
+        }),
+        cardHtml({
+          title: "Open CS Tickets",
+          sub: "Active customer support tickets",
+          valueText: fmtNum(data.open_tickets_count, 0),
+          currentNum: data.open_tickets_count,
+          prevKey: "open_tickets_count",
+          higherIsBetter: false,
+          footerText: "Open Tickets (Up = Red)"
+        }),
+        cardHtml({
+          title: "CSAT Score",
+          sub: "Customer satisfaction rate",
+          valueText: `${fmtNum(data.csat_score_pct, 2)}%`,
+          currentNum: data.csat_score_pct,
+          prevKey: "csat_score_pct",
+          higherIsBetter: true,
+          footerText: "CSAT (Up = Green)"
         })
       ].join("");
 
