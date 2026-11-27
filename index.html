@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -39,13 +39,15 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       background: var(--bg-page);
       color: var(--text-main);
       padding: 20px;
+      direction: ltr;
+      text-align: left;
     }
 
-    .container { max-width: 1320px; margin: 0 auto; }
+    .container { max-width: 1360px; margin: 0 auto; }
 
     .header-card, .filter-bar, .section-card {
       background: var(--bg-card);
@@ -118,7 +120,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
       gap: 14px;
     }
 
@@ -152,7 +154,7 @@
     }
 
     .kpi-value {
-      font-size: 1.45rem;
+      font-size: 1.42rem;
       font-weight: 800;
       color: var(--primary);
     }
@@ -163,8 +165,9 @@
       gap: 4px;
       padding: 3px 9px;
       border-radius: 999px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .trend-good { background: var(--good-bg); color: var(--good-text); }
@@ -174,6 +177,7 @@
     .kpi-footer {
       display: flex;
       justify-content: space-between;
+      gap: 8px;
       font-size: 0.8rem;
       color: var(--text-muted);
       border-top: 1px dashed var(--border);
@@ -190,17 +194,17 @@
           <div style="color:var(--text-muted); font-size:0.88rem;">HORECA SMART — Direct Supabase Integration (All Companies Unified)</div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn" onclick="document.body.classList.toggle('dark')">Dark Mode</button>
           <button class="btn btn-primary" onclick="loadScorecard()">Refresh Live Data</button>
+          <button class="btn" onclick="document.body.classList.toggle('dark')">Dark Mode</button>
         </div>
       </div>
     </div>
 
     <div class="filter-bar">
-      <label>من: <input type="date" id="dateFrom" class="btn" /></label>
-      <label>إلى: <input type="date" id="dateTo" class="btn" /></label>
+      <label>From: <input type="date" id="dateFrom" class="btn" onchange="loadScorecard()" /></label>
+      <label>To: <input type="date" id="dateTo" class="btn" onchange="loadScorecard()" /></label>
       <button class="btn" onclick="clearDates()">Clear Dates</button>
-      <span id="statusText" style="margin-right:auto; color:var(--text-muted); font-size:0.85rem;">جاري التحميل...</span>
+      <span id="statusText" style="margin-left:auto; color:var(--text-muted); font-size:0.85rem;">Loading...</span>
     </div>
 
     <div class="tabs" id="sectionTabs">
@@ -231,7 +235,7 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplenVva2xkdmZ3aXh6cWd6Zm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU3OTMzMzksImV4cCI6MjExMTM2OTMzOX0.pxm-APp3U3v88a06vpeh7Ca9PDq0xjvyivPha7vEW-0";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // higherIsBetter: true = الزيادة أخضر والانخفاض أحمر | false = الزيادة أحمر والانخفاض أخضر
+    // higherIsBetter: true = زيادة الرقم خضراء ونقصانه أحمر | false = زيادة الرقم حمراء ونقصانه أخضر
     const PREV_BENCHMARKS = {
       total_payable_local: 25800000,
       total_receivable_gl: 68700000,
@@ -319,7 +323,7 @@
 
     async function loadScorecard() {
       const statusEl = document.getElementById("statusText");
-      statusEl.textContent = "جاري تحديث البيانات من Supabase...";
+      statusEl.textContent = "Refreshing live data from Supabase...";
 
       const p_from = document.getElementById("dateFrom").value || null;
       const p_to = document.getElementById("dateTo").value || null;
@@ -331,7 +335,7 @@
       });
 
       if (error || !data) {
-        statusEl.textContent = `خطأ في الجلب: ${error?.message || "لا توجد بيانات"}`;
+        statusEl.textContent = `Error: ${error?.message || "No data returned"}`;
         return;
       }
 
@@ -343,7 +347,7 @@
           currentNum: data.total_payable_local,
           prevKey: "total_payable_local",
           higherIsBetter: false,
-          footerText: "الالتزامات (زيادة = أحمر)"
+          footerText: "Payables (Up = Red)"
         }),
         cardHtml({
           title: "Total Receivable",
@@ -352,25 +356,25 @@
           currentNum: data.total_receivable_gl,
           prevKey: "total_receivable_gl",
           higherIsBetter: true,
-          footerText: "مستحقات العملاء (زيادة = أخضر)"
+          footerText: "Receivable (Up = Green)"
         }),
         cardHtml({
           title: "Pending Custodies",
-          sub: "العهد • HORECA + MAS",
+          sub: "Custodies (عهد) • HORECA + MAS",
           valueText: fmtEGP(data.pending_custodies_gl),
           currentNum: data.pending_custodies_gl,
           prevKey: "pending_custodies_gl",
           higherIsBetter: false,
-          footerText: "العهد المعلقة (زيادة = أحمر)"
+          footerText: "Custodies (Up = Red)"
         }),
         cardHtml({
           title: "Pending Loans",
-          sub: "السلف • HORECA + MAS",
+          sub: "Loans (سلف) • HORECA + MAS",
           valueText: fmtEGP(data.pending_loans_gl),
           currentNum: data.pending_loans_gl,
           prevKey: "pending_loans_gl",
           higherIsBetter: false,
-          footerText: "السلف المعلقة (زيادة = أحمر)"
+          footerText: "Loans (Up = Red)"
         }),
         cardHtml({
           title: "Unreconciled Bills",
@@ -379,7 +383,7 @@
           currentNum: data.unreconciled_bills_count,
           prevKey: "unreconciled_bills_count",
           higherIsBetter: false,
-          footerText: "فواتير شراء غير مسواة"
+          footerText: "Vendor Bills"
         }),
         cardHtml({
           title: "Unreconciled Invoices",
@@ -388,7 +392,7 @@
           currentNum: data.unreconciled_invoices_count,
           prevKey: "unreconciled_invoices_count",
           higherIsBetter: false,
-          footerText: "فواتير مبيعات غير مسواة"
+          footerText: "Customer Invoices"
         }),
         cardHtml({
           title: "Orders To Invoice",
@@ -397,7 +401,7 @@
           currentNum: data.orders_to_invoice_before_today,
           prevKey: "orders_to_invoice_before_today",
           higherIsBetter: false,
-          footerText: "أوامر بانتظار الفوترة"
+          footerText: "Pending Invoicing"
         }),
         cardHtml({
           title: "Invoicing > 11:00 AM",
@@ -406,7 +410,7 @@
           currentNum: data.invoicing_after_11am_pct,
           prevKey: "invoicing_after_11am_pct",
           higherIsBetter: false,
-          footerText: "فواتير بعد 11 صباحاً"
+          footerText: "After 11:00 AM Rate"
         }),
         cardHtml({
           title: "Invoicing > 24H",
@@ -415,7 +419,7 @@
           currentNum: data.invoicing_over_24h_excl_friday_pct,
           prevKey: "invoicing_over_24h_excl_friday_pct",
           higherIsBetter: false,
-          footerText: "تأخير فوترة أكثر من 24 ساعة"
+          footerText: "Over 24H Delay"
         }),
         cardHtml({
           title: "Expenses Budget",
@@ -424,7 +428,7 @@
           currentNum: data.expenses_budget_over_pct,
           prevKey: "expenses_budget_over_pct",
           higherIsBetter: false,
-          footerText: "نسبة المصروفات مقابل الموازنة"
+          footerText: "Expenses vs Budget"
         }),
         cardHtml({
           title: "Cancelled Invoices",
@@ -433,7 +437,7 @@
           currentNum: data.cancelled_invoices_count,
           prevKey: "cancelled_invoices_count",
           higherIsBetter: false,
-          footerText: "الفواتير الملغاة"
+          footerText: "Cancelled Docs"
         })
       ].join("");
 
@@ -445,7 +449,7 @@
           currentNum: data.total_collected_millions,
           prevKey: "total_collected_millions",
           higherIsBetter: true,
-          footerText: "إجمالي التحصيل (زيادة = أخضر)"
+          footerText: "Collected (Up = Green)"
         }),
         cardHtml({
           title: "Due Over 60 Days",
@@ -454,7 +458,7 @@
           currentNum: data.due_over_60_days_millions,
           prevKey: "due_over_60_days_millions",
           higherIsBetter: false,
-          footerText: "متأخرات أكثر من 60 يوم (زيادة = أحمر)"
+          footerText: "Overdue > 60d (Up = Red)"
         })
       ].join("");
 
@@ -466,7 +470,7 @@
           currentNum: data.so_total_orders,
           prevKey: "so_total_orders",
           higherIsBetter: true,
-          footerText: "إجمالي أوامر البيع (زيادة = أخضر)"
+          footerText: "Sales Orders (Up = Green)"
         }),
         cardHtml({
           title: "Total GMV",
@@ -475,11 +479,11 @@
           currentNum: data.so_total_gmv_millions,
           prevKey: "so_total_gmv_millions",
           higherIsBetter: true,
-          footerText: "إجمالي قيمة المبيعات (زيادة = أخضر)"
+          footerText: "Gross Sales (Up = Green)"
         })
       ].join("");
 
-      statusEl.textContent = `آخر تحديث: ${new Date().toLocaleTimeString("ar-EG")}`;
+      statusEl.textContent = `Last updated: ${new Date().toLocaleTimeString("en-US")}`;
     }
 
     loadScorecard();
