@@ -328,81 +328,73 @@
     const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing", "cs"];
     let latestData = null;
 
-    // أرقام الأسبوع اللي فات: القيم المحسوبة في النص (الأخضر/الأحمر) في كل سكوركارد من Weekly Meeting 21-11-2026 (1).pdf
     const PREV_BENCHMARKS = {
-      // 1. Finance
-      total_payable_local: 29000000,         // 29 M
-      total_receivable_gl: 65400000,         // 65,4 M
-      pending_custodies_gl: 1600000,         // 1,6 M
-      pending_loans_gl: 1700000,             // 1,7 M
-      unreconciled_bills_count: 0,           // 0
-      unreconciled_invoices_count: 69,       // 69 (الرقم اللي بره القوس)
-      orders_to_invoice_before_today: 141,   // 141 Invoice
-      invoicing_after_11am_pct: 47,          // 47%
-      invoicing_over_24h_excl_friday_pct: 7, // 7%
-      expenses_budget_over_pct: 160,         // 160% over
-      cancelled_invoices_count: 0,           // 0 Invoice
+      total_payable_local: 29000000,
+      total_receivable_gl: 65400000,
+      pending_custodies_gl: 1600000,
+      pending_loans_gl: 1700000,
+      unreconciled_bills_count: 0,
+      unreconciled_invoices_count: 69,
+      orders_to_invoice_before_today: 141,
+      invoicing_after_11am_pct: 47,
+      invoicing_over_24h_excl_friday_pct: 7,
+      expenses_budget_over_pct: 160,
+      cancelled_invoices_count: 0,
 
-      // 2. Collection Department
-      dso_mas_credit: 45,                    // 45 days
-      dso_mas_cash: 36,                      // 36 days
-      dso_horeca_credit: 10,                 // 10 days
-      dso_horeca_cash: 13,                   // 13 days
-      dso_other: 58,                         // 58 days
-      col_total_collected: 3000000,          // 3 M (20)
-      total_visits: 20,                      // 20
-      col_due_over_60_days: 17000000,        // 17 M (26%)
-      col_variance_pct: 32,                  // 32%
-      col_unpaid_cash_mas: 2800000,          // 25 (2,8 M)
-      col_unpaid_cash_horeca: 1800000,       // 112 (1,8 M)
-      sales_approved_credit_policy_pct: 72,  // 72%
-      documented_credit_count: 85,           // 85%
+      dso_mas_credit: 45,
+      dso_mas_cash: 36,
+      dso_horeca_credit: 10,
+      dso_horeca_cash: 13,
+      dso_other: 58,
+      col_total_collected: 3000000,
+      total_visits: 20,
+      col_due_over_60_days: 17000000,
+      col_variance_pct: 32,
+      col_unpaid_cash_mas: 2800000,
+      col_unpaid_cash_horeca: 1800000,
+      documented_credit_count: 85,
 
-      // 3. Sales
-      gmv_mas: 4900000,                      // 4,9 M
-      mas_customers: 35,                     // 35 Customer
-      mas_orders: 54,                        // 54
-      products_sold_mas: 62,                 // 62 Product
-      gmv_horeca: 3600000,                   // 3,6 M
-      horeca_customers: 166,                 // 166 Customer
-      horeca_orders: 214,                    // 214
-      products_sold_horeca: 273,             // 273 Product
-      active_customers_30d: 437,             // 437
-      new_customers_count: 10,               // 10 New
-      retention_rate_pct: 51,                // 51%
-      sales_by_app_pct: 56,                  // 56%
-      crm_activities_count: 336,             // 336 call
+      gmv_mas: 4900000,
+      mas_customers: 35,
+      mas_orders: 54,
+      products_sold_mas: 62,
+      gmv_horeca: 3600000,
+      horeca_customers: 166,
+      horeca_orders: 214,
+      products_sold_horeca: 273,
+      active_customers_30d: 437,
+      new_customers_count: 10,
+      retention_rate_pct: 51,
+      sales_by_app_pct: 56,
+      crm_activities_count: 336,
 
-      // 4. Purchase
-      stockout_top100_pct: 12,               // 12%
-      stockout_products_count: 128,          // 128 Product
-      available_products_count: 557,         // 557 Product
-      new_products_count: 0,                 // 0 Product
-      products_purchased_count: 65,          // 65 Product
-      purchase_orders_count: 43,             // 43 PO
-      po_accuracy_pct: 100,                  // 100%
-      receipts_under_24h_pct: 28,            // 12 PO (28%)
-      gross_margin_mas_pct: 10,              // 10%
-      gross_margin_horeca_pct: 10,           // 10%
-      margin_lte_1_pct_count: 6,             // 6 Product
-      variance_of_prices_count: 10,          // 10 PO 23%
+      stockout_top100_pct: 12,
+      stockout_products_count: 128,
+      available_products_count: 557,
+      new_products_count: 0,
+      products_purchased_count: 65,
+      purchase_orders_count: 43,
+      po_accuracy_pct: 100,
+      receipts_under_24h_pct: 28,
+      gross_margin_mas_pct: 10,
+      gross_margin_horeca_pct: 10,
+      margin_lte_1_pct_count: 6,
+      variance_of_prices_count: 10,
 
-      // 5. Logistics
-      inventory_days: 28,                    // 28 Days
-      internal_transfers_count: 5,           // 5 Transfers
-      company_transfers_count: 16,           // 16 Transfers
-      nearexpire_products_count: 79,         // 79 (3,9 M)
-      returns_count: 498,                    // 498
-      returns_mas_val: 726000,               // 20% (726 K)
-      returns_horeca_val: 217000,            // 80% (217 K)
-      orders_to_validate_count: 23,          // 23 Order
-      validate_after_11am_pct: 43,           // 43%
-      orders_lt_3000_mas: 1,                 // 1
-      orders_lt_3000_horeca: 15,             // 15
+      inventory_days: 28,
+      internal_transfers_count: 5,
+      company_transfers_count: 16,
+      nearexpire_products_count: 79,
+      returns_count: 498,
+      returns_mas_val: 726000,
+      returns_horeca_val: 217000,
+      orders_to_validate_count: 23,
+      validate_after_11am_pct: 43,
+      orders_lt_3000_mas: 1,
+      orders_lt_3000_horeca: 15,
 
-      // 6 & 7. Marketing & CS
-      marketing_views_count: 113261,         // 113,261
-      cs_tickets_count: 161                  // 161
+      marketing_views_count: 113261,
+      cs_tickets_count: 161
     };
 
     function fmtMoneyShort(val, withCurrency = true) {
@@ -696,7 +688,7 @@
         }),
         cardHtml({
           title: "DSO MAS (Credit)",
-          sub: "Due credit MAS / Sales credit 3M",
+          sub: "(Due Credit MAS / Sales Credit 3M) * 90",
           valueText: fmtCount(data.dso_mas_credit, "days"),
           currentNum: data.dso_mas_credit,
           prevKey: "dso_mas_credit",
@@ -707,7 +699,7 @@
         }),
         cardHtml({
           title: "DSO MAS (Cash)",
-          sub: "Due Cash MAS / Sales Cash 3M",
+          sub: "(Due Cash MAS / Sales Cash 3M) * 90",
           valueText: fmtCount(data.dso_mas_cash, "days"),
           currentNum: data.dso_mas_cash,
           prevKey: "dso_mas_cash",
@@ -718,7 +710,7 @@
         }),
         cardHtml({
           title: "DSO Horeca (Credit)",
-          sub: "Due credit Horeca / Sales Credit 3M",
+          sub: "(Due Credit Horeca / Sales Credit 3M) * 90",
           valueText: fmtCount(data.dso_horeca_credit, "days"),
           currentNum: data.dso_horeca_credit,
           prevKey: "dso_horeca_credit",
@@ -729,7 +721,7 @@
         }),
         cardHtml({
           title: "DSO Horeca (Cash)",
-          sub: "Due Cash Horeca / Sales Cash 3M",
+          sub: "(Due Cash Horeca / Sales Cash 3M) * 90",
           valueText: fmtCount(data.dso_horeca_cash, "days"),
           currentNum: data.dso_horeca_cash,
           prevKey: "dso_horeca_cash",
@@ -740,7 +732,7 @@
         }),
         cardHtml({
           title: "DSO Other",
-          sub: "Due other / Sales Other 3M",
+          sub: "(Due Other / Sales 3M excl. Mas & Horeca Smart) * 90",
           valueText: fmtCount(data.dso_other, "days"),
           currentNum: data.dso_other,
           prevKey: "dso_other",
@@ -782,18 +774,8 @@
           footerText: "Collection Team"
         }),
         cardHtml({
-          title: "Sales Approved By Credit Policy",
-          sub: "Customers with due / total customers",
-          valueText: fmtPct(data.sales_approved_credit_policy_pct),
-          currentNum: data.sales_approved_credit_policy_pct,
-          prevKey: "sales_approved_credit_policy_pct",
-          unitType: "pct",
-          higherIsBetter: true,
-          footerText: "Sales Orders"
-        }),
-        cardHtml({
           title: "Documented Credit",
-          sub: "Count of documents",
+          sub: "Count of documented customers • Document Credit",
           valueText: fmtCount(data.documented_credit_count),
           currentNum: data.documented_credit_count,
           prevKey: "documented_credit_count",
