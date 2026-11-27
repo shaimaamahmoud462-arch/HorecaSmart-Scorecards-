@@ -133,7 +133,7 @@
     .filter-label { font-size: 13px; font-weight: 800; color: var(--deep-navy); }
     .date-field { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
 
-    input[type="date"], input[type="number"] {
+    input[type="date"], input[type="number"], select {
       padding: 8px 11px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -270,6 +270,13 @@
 
     <div class="toolbar-row">
       <div class="date-filter-group">
+        <span class="filter-label" id="t_companyLabel">Company:</span>
+        <select id="companyFilterInput" onchange="loadScorecard()">
+          <option value="">All Companies (Horeca + MAS)</option>
+          <option value="Horeca">Horeca</option>
+          <option value="MAS">MAS</option>
+        </select>
+
         <span class="filter-label" id="t_dateFilterLabel">Date Filter:</span>
         <label class="date-field">
           <span id="t_fromLabel">From</span>
@@ -281,7 +288,7 @@
         </label>
         <button class="btn-secondary" id="t_clearDateBtn" onclick="clearDateFilter()">Clear Dates</button>
       </div>
-      <div class="date-field" id="dateFilterBadge">All Dates</div>
+      <div class="date-field" id="dateFilterBadge">All Companies • All Dates</div>
     </div>
 
     <div class="nav-tabs">
@@ -388,6 +395,7 @@
         toEn: "English",
         refreshBtn: "Refresh Live Data",
         exportBtn: "Export CSV",
+        companyLabel: "Company:",
         dateFilterLabel: "Date Filter:",
         fromLabel: "From",
         toLabel: "To",
@@ -430,6 +438,7 @@
         toEn: "English",
         refreshBtn: "تحديث البيانات الحية",
         exportBtn: "تصدير CSV",
+        companyLabel: "الشركة:",
         dateFilterLabel: "فلتر التاريخ:",
         fromLabel: "من",
         toLabel: "إلى",
@@ -565,7 +574,7 @@
     function applyStaticTranslations() {
       const ids = [
         "mainTitle", "mainSub", "refreshBtn", "exportBtn",
-        "dateFilterLabel", "fromLabel", "toLabel", "clearDateBtn",
+        "companyLabel", "dateFilterLabel", "fromLabel", "toLabel", "clearDateBtn",
         "budgetTitle", "budgetDesc", "saveBudgetBtn",
         "secFinance", "rocksFinance", "secCollection", "rocksCollection",
         "docCol1", "docCol2", "secSales", "rocksSales",
@@ -649,10 +658,11 @@
 
     function renderAllCards() {
       const d = computedSummary || {};
+      const compVal = document.getElementById("companyFilterInput").value || "ALL";
       const fromVal = document.getElementById("fromDateInput").value;
       const toVal = document.getElementById("toDateInput").value;
-      const isFiltered = Boolean(fromVal || toVal);
-      const periodTag = isFiltered ? "Filtered SB" : "Odoo/SB";
+      const isFiltered = Boolean(fromVal || toVal || compVal !== "ALL");
+      const periodTag = `${compVal}${isFiltered ? " • Filt" : ""}`;
 
       if (d.expenses_budget_manual !== undefined && document.activeElement !== document.getElementById("budgetInput")) {
         document.getElementById("budgetInput").value = d.expenses_budget_manual || 100000;
@@ -673,28 +683,28 @@
       document.getElementById("financeGrid").innerHTML = [
         card({
           title: "Total Payable",
-          note: currentLang === "ar" ? "رصيد General Ledger التراكمي (خارج فلتر التاريخ)" : "General Ledger balance (outside date filter)",
+          note: currentLang === "ar" ? `رصيد GL (${compVal}) خارج فلتر التاريخ` : `GL balance (${compVal}) outside date filter`,
           source: "GL Report",
           value: fmtNum(d.total_payable_local, " EGP"),
           prev: f.payablePrev
         }),
         card({
           title: "Total Receivable",
-          note: currentLang === "ar" ? "رصيد General Ledger التراكمي (خارج فلتر التاريخ)" : "General Ledger balance (outside date filter)",
+          note: currentLang === "ar" ? `رصيد GL (${compVal}) خارج فلتر التاريخ` : `GL balance (${compVal}) outside date filter`,
           source: "GL Report",
           value: fmtNum(d.total_receivable_gl, " EGP"),
           prev: f.receivablePrev
         }),
         card({
           title: "Pending Custodies",
-          note: currentLang === "ar" ? "إجمالي حسابات (عهد)" : "Total from accounts named (عهد)",
+          note: currentLang === "ar" ? `إجمالي حسابات (عهد) • ${compVal}` : `Total from accounts named (عهد) • ${compVal}`,
           source: periodTag,
           value: fmtNum(d.pending_custodies_gl, " EGP"),
           prev: f.custodiesPrev
         }),
         card({
           title: "Pending Loans",
-          note: currentLang === "ar" ? "إجمالي حسابات (سلف)" : "Total from accounts named (سلف)",
+          note: currentLang === "ar" ? `إجمالي حسابات (سلف) • ${compVal}` : `Total from accounts named (سلف) • ${compVal}`,
           source: periodTag,
           value: fmtNum(d.pending_loans_gl, " EGP"),
           prev: f.loansPrev
@@ -823,12 +833,15 @@
     }
 
     async function loadScorecard() {
+      const compVal = document.getElementById("companyFilterInput").value || null;
       const fromVal = document.getElementById("fromDateInput").value || null;
       const toVal = document.getElementById("toDateInput").value || null;
       const badge = document.getElementById("dateFilterBadge");
       const statusText = document.getElementById("statusText");
 
-      badge.textContent = (!fromVal && !toVal) ? t("allDates") : `${fromVal || "..."} → ${toVal || "..."}`;
+      const compLabel = compVal || "All Companies";
+      const dateLabel = (!fromVal && !toVal) ? t("allDates") : `${fromVal || "..."} → ${toVal || "..."}`;
+      badge.textContent = `${compLabel} • ${dateLabel}`;
       statusText.textContent = "Querying Supabase RPC get_scorecard_by_date...";
 
       try {
@@ -846,7 +859,7 @@
               "Authorization": `Bearer ${SUPABASE_KEY}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ p_from: fromVal, p_to: toVal })
+            body: JSON.stringify({ p_from: fromVal, p_to: toVal, p_company: compVal })
           })
         ]);
 
@@ -857,9 +870,7 @@
         const rpcData = await rpcRes.json();
         computedSummary = { ...baseView, ...(rpcData || {}) };
 
-        statusText.textContent = (fromVal || toVal)
-          ? `Filtered (${fromVal || "start"} → ${toVal || "today"}) • GL matched: ${computedSummary.gl_rows_matched ?? 0}`
-          : `All Dates • Updated: ${new Date().toLocaleString()}`;
+        statusText.textContent = `${compLabel} • ${dateLabel} • GL matched: ${computedSummary.gl_rows_matched ?? 0}`;
       } catch (err) {
         statusText.textContent = `RPC Notice (${err.message})`;
       }
