@@ -228,10 +228,9 @@
 
   <script>
     const SUPABASE_URL = "https://zezuokldvfwixzqgzfot.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplenVva2xkdmZ3aXh6cWdnZm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5OTY4MTYsImV4cCI6MjA3NzU3MjgxNn0.PLACEHOLDER";
+    const SUPABASE_ANON_KEY = "sb_publishable_RCIGchr0WXvu5r1830gArg_a8tBnNea";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // القيم المرجعية للأسبوع السابق لضبط اتجاه السهم والأخضر/الأحمر
     // higherIsBetter: true = الزيادة أخضر والانخفاض أحمر | false = الزيادة أحمر والانخفاض أخضر
     const PREV_BENCHMARKS = {
       total_payable_local: 25800000,
