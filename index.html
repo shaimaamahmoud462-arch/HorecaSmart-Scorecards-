@@ -257,7 +257,7 @@
         <img src="./Primary-Color.png" alt="HORECA SMART Logo" class="brand-logo" onerror="this.style.display='none'" />
         <div>
           <h1 class="brand-title" id="t_mainTitle">Score Cards of the Week</h1>
-          <p class="brand-subtitle" id="t_mainSub">HORECA SMART — YOUR SMART CHOICE • Weekly Meeting Reference (21-11-2026) & Live Supabase</p>
+          <p class="brand-subtitle" id="t_mainSub">HORECA SMART — YOUR SMART CHOICE • Direct Supabase Integration</p>
         </div>
       </div>
       <div class="banner-actions">
@@ -388,7 +388,7 @@
     const I18N = {
       en: {
         mainTitle: "Score Cards of the Week",
-        mainSub: "HORECA SMART — YOUR SMART CHOICE • Weekly Meeting Reference (21-11-2026) & Live Supabase",
+        mainSub: "HORECA SMART — YOUR SMART CHOICE • Direct Supabase Integration",
         toDark: "Dark Mode",
         toLight: "Light Mode",
         toAr: "العربية",
@@ -431,7 +431,7 @@
       },
       ar: {
         mainTitle: "بطاقات أداء الأسبوع — Score Cards",
-        mainSub: "هوريكا سمارت • مرجع اجتماع 21-11-2026 والبيانات الحية من Supabase",
+        mainSub: "هوريكا سمارت • ربط مباشر مع Supabase",
         toDark: "الوضع الداكن",
         toLight: "الوضع الفاتح",
         toAr: "العربية",
@@ -486,15 +486,15 @@
 
     const PDF_REF = {
       finance: {
-        payableCurr: "29 M", payablePrev: "25,8 M",
-        receivableCurr: "65,4 M", receivablePrev: "68,7 M",
+        payablePrev: "25,8 M",
+        receivablePrev: "68,7 M",
         inv24Prev: "12%", unrecBillsPrev: "0",
-        unrecInvCurr: "69 (17)", unrecInvPrev: "17 (14)",
-        ordersToInvCurr: "141 Invoice", ordersToInvPrev: "12 Invoice",
-        custodiesCurr: "1,6 M", custodiesPrev: "1,7 M",
-        cancelledCurr: "0 Invoice", cancelledPrev: "2",
+        unrecInvPrev: "17 (14)",
+        ordersToInvPrev: "12 Invoice",
+        custodiesPrev: "1,7 M",
+        cancelledPrev: "2",
         expBudgetCurr: "160% over", expBudgetPrev: "101% over",
-        loansCurr: "1,7 M", loansPrev: "1,7 M",
+        loansPrev: "1,7 M",
         inv11Prev: "75%"
       },
       collection: {
@@ -683,15 +683,15 @@
       document.getElementById("financeGrid").innerHTML = [
         card({
           title: "Total Payable",
-          note: currentLang === "ar" ? `رصيد GL (${compVal}) خارج فلتر التاريخ` : `GL balance (${compVal}) outside date filter`,
-          source: "GL Report",
+          note: currentLang === "ar" ? `رصيد Supabase (${compVal}) خارج فلتر التاريخ` : `Supabase balance (${compVal}) outside date filter`,
+          source: "Supabase",
           value: fmtNum(d.total_payable_local, " EGP"),
           prev: f.payablePrev
         }),
         card({
           title: "Total Receivable",
-          note: currentLang === "ar" ? `رصيد GL (${compVal}) خارج فلتر التاريخ` : `GL balance (${compVal}) outside date filter`,
-          source: "GL Report",
+          note: currentLang === "ar" ? `رصيد Supabase (${compVal}) خارج فلتر التاريخ` : `Supabase balance (${compVal}) outside date filter`,
+          source: "Supabase",
           value: fmtNum(d.total_receivable_gl, " EGP"),
           prev: f.receivablePrev
         }),
@@ -763,11 +763,11 @@
 
       const c = PDF_REF.collection;
       document.getElementById("collectionGrid").innerHTML = [
-        card({ title: "DSO MAS (Credit)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_mas_credit_days, " d"), prev: c.dsoMasCreditPrev }),
-        card({ title: "DSO MAS (Cash)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_mas_cash_days, " d"), prev: c.dsoMasCashPrev }),
-        card({ title: "DSO Horeca (Credit)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_credit_days, " d"), prev: c.dsoHorecaCreditPrev }),
-        card({ title: "DSO Horeca (Cash)", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_horeca_cash_days, " d"), prev: c.dsoHorecaCashPrev }),
-        card({ title: "DSO Other", note: "Target ≤ 35 days", source: "Odoo/SB", value: fmtNum(d.dso_other_days, " d"), prev: c.dsoOtherPrev }),
+        card({ title: "DSO MAS (Credit)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_mas_credit_days, " d"), prev: c.dsoMasCreditPrev }),
+        card({ title: "DSO MAS (Cash)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_mas_cash_days, " d"), prev: c.dsoMasCashPrev }),
+        card({ title: "DSO Horeca (Credit)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_horeca_credit_days, " d"), prev: c.dsoHorecaCreditPrev }),
+        card({ title: "DSO Horeca (Cash)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_horeca_cash_days, " d"), prev: c.dsoHorecaCashPrev }),
+        card({ title: "DSO Other", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_other_days, " d"), prev: c.dsoOtherPrev }),
         card({ title: "Total Collected", note: "In millions (EGP)", source: periodTag, value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
         card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: periodTag, value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
         card({ title: "Collection Variance", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.collVarCurr, prev: c.collVarPrev }),
@@ -780,9 +780,9 @@
       const s = PDF_REF.sales;
       document.getElementById("salesGrid").innerHTML = [
         card({ title: "Active Customers", note: "Target: 650", source: "Ref 21/11", value: s.activeCustCurr, prev: s.activeCustPrev }),
-        card({ title: "GMV MAS", note: isFiltered ? `Total SO GMV in period: ${fmtNum(d.so_total_gmv_millions, " M")}` : "21-11-2026 Ref", source: isFiltered ? "SO Live" : "Ref 21/11", value: isFiltered ? fmtNum(d.so_total_gmv_millions, " M") : s.gmvMasCurr, prev: s.gmvMasPrev }),
+        card({ title: "GMV MAS", note: isFiltered ? `Total SO GMV in period: ${fmtNum(d.so_total_gmv_millions, " M")}` : "21-11-2026 Ref", source: isFiltered ? "Supabase" : "Ref 21/11", value: isFiltered ? fmtNum(d.so_total_gmv_millions, " M") : s.gmvMasCurr, prev: s.gmvMasPrev }),
         card({ title: "MAS Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.masCustCurr, prev: s.masCustPrev }),
-        card({ title: "MAS Orders", note: isFiltered ? `Total SO Orders in period: ${fmtInt(d.so_total_orders)}` : "21-11-2026 Ref", source: isFiltered ? "SO Live" : "Ref 21/11", value: isFiltered ? fmtInt(d.so_total_orders) : s.masOrdersCurr, prev: s.masOrdersPrev }),
+        card({ title: "MAS Orders", note: isFiltered ? `Total SO Orders in period: ${fmtInt(d.so_total_orders)}` : "21-11-2026 Ref", source: isFiltered ? "Supabase" : "Ref 21/11", value: isFiltered ? fmtInt(d.so_total_orders) : s.masOrdersCurr, prev: s.masOrdersPrev }),
         card({ title: "Products Sold MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.prodSoldMasCurr, prev: s.prodSoldMasPrev }),
         card({ title: "GMV Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.gmvHorecaCurr, prev: s.gmvHorecaPrev }),
         card({ title: "Horeca Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.horecaCustCurr, prev: s.horecaCustPrev }),
@@ -842,37 +842,28 @@
       const compLabel = compVal || "All Companies";
       const dateLabel = (!fromVal && !toVal) ? t("allDates") : `${fromVal || "..."} → ${toVal || "..."}`;
       badge.textContent = `${compLabel} • ${dateLabel}`;
-      statusText.textContent = "Querying Supabase RPC get_scorecard_by_date...";
+      statusText.textContent = "Querying Supabase directly...";
 
       try {
-        const [viewRes, rpcRes] = await Promise.all([
-          fetch(`${SUPABASE_URL}/rest/v1/weekly_scorecard_kpis?select=*`, {
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`
-            }
-          }).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${SUPABASE_URL}/rest/v1/rpc/get_scorecard_by_date`, {
-            method: "POST",
-            headers: {
-              "apikey": SUPABASE_KEY,
-              "Authorization": `Bearer ${SUPABASE_KEY}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ p_from: fromVal, p_to: toVal, p_company: compVal })
-          })
-        ]);
+        const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_scorecard_by_date`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ p_from: fromVal, p_to: toVal, p_company: compVal })
+        });
 
-        const baseView = Array.isArray(viewRes) && viewRes[0] ? viewRes[0] : {};
         if (!rpcRes.ok) {
-          throw new Error(`RPC HTTP ${rpcRes.status}: ${await rpcRes.text()}`);
+          throw new Error(`Supabase RPC HTTP ${rpcRes.status}: ${await rpcRes.text()}`);
         }
         const rpcData = await rpcRes.json();
-        computedSummary = { ...baseView, ...(rpcData || {}) };
+        computedSummary = rpcData || {};
 
-        statusText.textContent = `${compLabel} • ${dateLabel} • GL matched: ${computedSummary.gl_rows_matched ?? 0}`;
+        statusText.textContent = `Direct Supabase • ${compLabel} • ${dateLabel} • Balances rows: ${computedSummary.gl_rows_matched ?? 0}`;
       } catch (err) {
-        statusText.textContent = `RPC Notice (${err.message})`;
+        statusText.textContent = `Supabase Notice (${err.message})`;
       }
 
       renderAllCards();
