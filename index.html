@@ -667,8 +667,9 @@
         }),
         cardHtml({
           title: "DUE > 60 Days",
-          sub: "Aged Receivable • Total due > 60 days",
+          sub: `Exact: ${fmtExactEGP(data.col_due_over_60_days)}`,
           valueText: fmtMoneyShort(data.col_due_over_60_days, true),
+          rightText: data.col_due_over_60_pct ? `${fmtPct(data.col_due_over_60_pct)}` : "",
           exactTitle: fmtExactEGP(data.col_due_over_60_days),
           currentNum: data.col_due_over_60_days,
           prevKey: "col_due_over_60_days",
