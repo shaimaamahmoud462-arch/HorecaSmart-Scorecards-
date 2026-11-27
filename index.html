@@ -154,7 +154,7 @@
     }
 
     .kpi-value {
-      font-size: 1.42rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: var(--primary);
     }
@@ -255,73 +255,118 @@
 
     const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing_cs"];
 
-    // higherIsBetter: true = زيادة الرقم خضراء ونقصانه أحمر | false = زيادة الرقم حمراء ونقصانه أخضر
+    // الأرقام المحسوبة المستخرجة من PDF (Weekly Meeting 21-11-2026) كمرجع للمقارنة
     const PREV_BENCHMARKS = {
-      total_payable_local: 25800000,
-      total_receivable_gl: 68700000,
-      pending_custodies_gl: 1700000,
-      pending_loans_gl: 1700000,
-      unreconciled_bills_count: 0,
-      unreconciled_invoices_count: 17,
-      orders_to_invoice_before_today: 12,
-      invoicing_after_11am_pct: 75,
-      invoicing_over_24h_excl_friday_pct: 12,
-      expenses_budget_over_pct: 101,
-      cancelled_invoices_count: 580,
-      total_collected_millions: 14.5,
-      due_over_60_days_millions: 2.1,
-      collection_rate_pct: 85,
-      so_total_orders: 1200,
-      so_total_gmv_millions: 85.0,
-      invoiced_orders_count: 1050,
-      avg_order_value_k: 70.0,
-      purchase_orders_count: 180,
-      purchase_total_millions: 22.0,
-      open_rfq_count: 14,
-      vendor_bills_count: 165,
-      delivered_orders_count: 1120,
-      pending_deliveries_count: 35,
-      on_time_delivery_pct: 92,
-      delayed_shipments_count: 15,
-      leads_opportunities_count: 95,
-      won_deals_count: 42,
-      open_tickets_count: 18,
-      csat_score_pct: 89
+      // 1. Finance
+      total_payable_local: 29000000,         // 29 M
+      total_receivable_gl: 65400000,         // 65.4 M
+      pending_custodies_gl: 1600000,         // 1.6 M
+      pending_loans_gl: 1700000,             // 1.7 M
+      unreconciled_bills_count: 0,           // 0
+      unreconciled_invoices_count: 69,       // 69
+      orders_to_invoice_before_today: 141,   // 141
+      invoicing_after_11am_pct: 47,          // 47%
+      invoicing_over_24h_excl_friday_pct: 7, // 7%
+      expenses_budget_over_pct: 160,         // 160%
+      cancelled_invoices_count: 0,           // 0
+
+      // 2. Collection
+      total_collected_millions: 3.0,         // 3 M
+      due_over_60_days_millions: 17.0,       // 17 M
+      collection_rate_pct: 68,               // 100% - 32% variance = 68%
+
+      // 3. Sales
+      so_total_orders: 268,                  // 54 MAS + 214 Horeca
+      so_total_gmv_millions: 8.5,            // 4.9 M MAS + 3.6 M Horeca
+      invoiced_orders_count: 268,
+      avg_order_value_k: 31.7,
+
+      // 4. Purchase
+      purchase_orders_count: 43,             // 43 PO
+      purchase_total_millions: 3.9,          // NearExpire / PO spend ref
+      open_rfq_count: 10,                    // 10 PO variance
+      vendor_bills_count: 43,
+
+      // 5. Logistics
+      delivered_orders_count: 498,           // 498 delivered
+      pending_deliveries_count: 23,          // 23 orders to validate
+      on_time_delivery_pct: 45.4,            // 45.4% On Time
+      delayed_shipments_count: 272,          // 236 + 36 delayed
+
+      // 6 & 7. Marketing & CS
+      leads_opportunities_count: 262,        // 262 registered in sheet
+      won_deals_count: 35,                   // 35 orders
+      open_tickets_count: 20,                // 20 open tickets
+      csat_score_pct: 87.6                   // 141 / 161 resolved = 87.6%
     };
 
-    function fmtNum(val, decimals = 2) {
+    // دالة اختصار المبالغ المالية لأقرب قيمة (مثال: 29,000,000 -> 29M | 26,554,768 -> 26.6M | 206,561 -> 206.6K)
+    function fmtMoneyShort(val, withCurrency = true) {
       const n = Number(val ?? 0);
-      return n.toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-      });
+      const abs = Math.abs(n);
+      const sign = n < 0 ? "-" : "";
+      let formatted = "";
+
+      if (abs >= 1_000_000) {
+        const m = Math.round((abs / 1_000_000) * 10) / 10;
+        formatted = `${sign}${Number.isInteger(m) ? m.toFixed(0) : m.toFixed(1)}M`;
+      } else if (abs >= 1_000) {
+        const k = Math.round((abs / 1_000) * 10) / 10;
+        formatted = `${sign}${Number.isInteger(k) ? k.toFixed(0) : k.toFixed(1)}K`;
+      } else {
+        const r = Math.round(abs * 10) / 10;
+        formatted = `${sign}${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}`;
+      }
+
+      return withCurrency ? `${formatted} EGP` : formatted;
     }
 
-    function fmtEGP(val) {
-      return `${fmtNum(val, 2)} EGP`;
+    function fmtExactEGP(val) {
+      return `${Number(val ?? 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })} EGP`;
+    }
+
+    function fmtCount(val) {
+      return Math.round(Number(val ?? 0)).toLocaleString("en-US");
+    }
+
+    function fmtPct(val) {
+      const r = Math.round(Number(val ?? 0) * 10) / 10;
+      return `${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}%`;
+    }
+
+    function formatPrevDisplay(prevVal, unitType) {
+      if (unitType === "egp") return fmtMoneyShort(prevVal, false);
+      if (unitType === "millions") return `${Number.isInteger(prevVal) ? prevVal.toFixed(0) : prevVal.toFixed(1)}M`;
+      if (unitType === "thousands") return `${Number.isInteger(prevVal) ? prevVal.toFixed(0) : prevVal.toFixed(1)}K`;
+      if (unitType === "pct") return fmtPct(prevVal);
+      return fmtCount(prevVal);
     }
 
     function renderTrend(currentVal, prevVal, higherIsBetter = false) {
       const curr = Number(currentVal ?? 0);
       const prev = Number(prevVal ?? 0);
 
-      if (curr === prev) {
-        return `<span class="trend-badge trend-neutral">• 0.0%</span>`;
+      if (Math.abs(curr - prev) < 0.0001) {
+        return `<span class="trend-badge trend-neutral">• 0%</span>`;
       }
 
       const isUp = curr > prev;
       const arrow = isUp ? "▲" : "▼";
       const isGood = higherIsBetter ? isUp : !isUp;
       const cls = isGood ? "trend-good" : "trend-bad";
-      const pct = prev !== 0 ? `${Math.abs(((curr - prev) / Math.abs(prev)) * 100).toFixed(1)}%` : "New";
+      const pctRaw = prev !== 0 ? Math.abs(((curr - prev) / Math.abs(prev)) * 100) : 100;
+      const pct = `${Math.round(pctRaw)}%`;
 
       return `<span class="trend-badge ${cls}">${arrow} ${pct}</span>`;
     }
 
-    function cardHtml({ title, sub, valueText, currentNum, prevKey, higherIsBetter, footerText }) {
+    function cardHtml({ title, sub, valueText, exactTitle = "", currentNum, prevKey, unitType = "count", higherIsBetter, footerText }) {
       const prevVal = PREV_BENCHMARKS[prevKey] ?? 0;
       return `
-        <div class="kpi-card">
+        <div class="kpi-card" title="${exactTitle}">
           <div class="kpi-top">
             <div>
               <div class="kpi-title">${title}</div>
@@ -334,7 +379,7 @@
           </div>
           <div class="kpi-footer">
             <span>${footerText}</span>
-            <span>Prev: ${fmtNum(prevVal, prevVal % 1 === 0 ? 0 : 2)}</span>
+            <span>Prev (21/11): ${formatPrevDisplay(prevVal, unitType)}</span>
           </div>
         </div>
       `;
@@ -377,100 +422,116 @@
       document.getElementById("financeGrid").innerHTML = [
         cardHtml({
           title: "Total Payable",
-          sub: "Payables Local • HORECA + MAS",
-          valueText: fmtEGP(data.total_payable_local),
+          sub: `Exact: ${fmtExactEGP(data.total_payable_local)}`,
+          valueText: fmtMoneyShort(data.total_payable_local, true),
+          exactTitle: fmtExactEGP(data.total_payable_local),
           currentNum: data.total_payable_local,
           prevKey: "total_payable_local",
+          unitType: "egp",
           higherIsBetter: false,
-          footerText: "Payables (Up = Red)"
+          footerText: "Payables Local"
         }),
         cardHtml({
           title: "Total Receivable",
-          sub: "Receivable Accounts • HORECA + MAS",
-          valueText: fmtEGP(data.total_receivable_gl),
+          sub: `Exact: ${fmtExactEGP(data.total_receivable_gl)}`,
+          valueText: fmtMoneyShort(data.total_receivable_gl, true),
+          exactTitle: fmtExactEGP(data.total_receivable_gl),
           currentNum: data.total_receivable_gl,
           prevKey: "total_receivable_gl",
+          unitType: "egp",
           higherIsBetter: true,
-          footerText: "Receivable (Up = Green)"
+          footerText: "Receivable Accounts"
         }),
         cardHtml({
           title: "Pending Custodies",
-          sub: "Custodies (عهد) • HORECA + MAS",
-          valueText: fmtEGP(data.pending_custodies_gl),
+          sub: `Exact: ${fmtExactEGP(data.pending_custodies_gl)}`,
+          valueText: fmtMoneyShort(data.pending_custodies_gl, true),
+          exactTitle: fmtExactEGP(data.pending_custodies_gl),
           currentNum: data.pending_custodies_gl,
           prevKey: "pending_custodies_gl",
+          unitType: "egp",
           higherIsBetter: false,
-          footerText: "Custodies (Up = Red)"
+          footerText: "Custodies (عهد)"
         }),
         cardHtml({
           title: "Pending Loans",
-          sub: "Loans (سلف) • HORECA + MAS",
-          valueText: fmtEGP(data.pending_loans_gl),
+          sub: `Exact: ${fmtExactEGP(data.pending_loans_gl)}`,
+          valueText: fmtMoneyShort(data.pending_loans_gl, true),
+          exactTitle: fmtExactEGP(data.pending_loans_gl),
           currentNum: data.pending_loans_gl,
           prevKey: "pending_loans_gl",
+          unitType: "egp",
           higherIsBetter: false,
-          footerText: "Loans (Up = Red)"
+          footerText: "Loans (سلف)"
         }),
         cardHtml({
           title: "Unreconciled Bills",
           sub: "Posted vendor bills with outstanding",
-          valueText: fmtNum(data.unreconciled_bills_count, 0),
+          valueText: fmtCount(data.unreconciled_bills_count),
           currentNum: data.unreconciled_bills_count,
           prevKey: "unreconciled_bills_count",
+          unitType: "count",
           higherIsBetter: false,
           footerText: "Vendor Bills"
         }),
         cardHtml({
           title: "Unreconciled Invoices",
           sub: "Posted customer invoices with outstanding",
-          valueText: fmtNum(data.unreconciled_invoices_count, 0),
+          valueText: fmtCount(data.unreconciled_invoices_count),
           currentNum: data.unreconciled_invoices_count,
           prevKey: "unreconciled_invoices_count",
+          unitType: "count",
           higherIsBetter: false,
           footerText: "Customer Invoices"
         }),
         cardHtml({
           title: "Orders To Invoice",
           sub: "Before today delivery",
-          valueText: fmtNum(data.orders_to_invoice_before_today, 0),
+          valueText: fmtCount(data.orders_to_invoice_before_today),
           currentNum: data.orders_to_invoice_before_today,
           prevKey: "orders_to_invoice_before_today",
+          unitType: "count",
           higherIsBetter: false,
           footerText: "Pending Invoicing"
         }),
         cardHtml({
           title: "Invoicing > 11:00 AM",
-          sub: `Count: ${fmtNum(data.invoicing_after_11am_count, 0)}`,
-          valueText: `${fmtNum(data.invoicing_after_11am_pct, 2)}%`,
+          sub: `Count: ${fmtCount(data.invoicing_after_11am_count)}`,
+          valueText: fmtPct(data.invoicing_after_11am_pct),
           currentNum: data.invoicing_after_11am_pct,
           prevKey: "invoicing_after_11am_pct",
+          unitType: "pct",
           higherIsBetter: false,
           footerText: "After 11:00 AM Rate"
         }),
         cardHtml({
           title: "Invoicing > 24H",
-          sub: `Count: ${fmtNum(data.invoicing_over_24h_count, 0)} (Excl. Fri)`,
-          valueText: `${fmtNum(data.invoicing_over_24h_excl_friday_pct, 2)}%`,
+          sub: `Count: ${fmtCount(data.invoicing_over_24h_count)} (Excl. Fri)`,
+          valueText: fmtPct(data.invoicing_over_24h_excl_friday_pct),
           currentNum: data.invoicing_over_24h_excl_friday_pct,
           prevKey: "invoicing_over_24h_excl_friday_pct",
+          unitType: "pct",
           higherIsBetter: false,
           footerText: "Over 24H Delay"
         }),
         cardHtml({
           title: "Expenses Budget",
-          sub: `Actual: ${fmtEGP(data.expenses_actual)}`,
-          valueText: `${fmtNum(data.expenses_budget_over_pct, 2)}%`,
+          sub: `Actual: ${fmtMoneyShort(data.expenses_actual, true)}`,
+          valueText: fmtPct(data.expenses_budget_over_pct),
+          exactTitle: fmtExactEGP(data.expenses_actual),
           currentNum: data.expenses_budget_over_pct,
           prevKey: "expenses_budget_over_pct",
+          unitType: "pct",
           higherIsBetter: false,
           footerText: "Expenses vs Budget"
         }),
         cardHtml({
           title: "Cancelled Invoices",
           sub: "State = cancel",
-          valueText: fmtNum(data.cancelled_invoices_count, 0),
+          valueText: fmtCount(data.cancelled_invoices_count),
           currentNum: data.cancelled_invoices_count,
           prevKey: "cancelled_invoices_count",
+          unitType: "count",
           higherIsBetter: false,
           footerText: "Cancelled Docs"
         })
@@ -480,29 +541,32 @@
         cardHtml({
           title: "Total Collected",
           sub: "Posted out_invoice collected",
-          valueText: `${fmtNum(data.total_collected_millions, 2)}M EGP`,
+          valueText: `${Number(data.total_collected_millions ?? 0).toFixed(1)}M EGP`,
           currentNum: data.total_collected_millions,
           prevKey: "total_collected_millions",
+          unitType: "millions",
           higherIsBetter: true,
-          footerText: "Collected (Up = Green)"
+          footerText: "Collected Amount"
         }),
         cardHtml({
           title: "Due Over 60 Days",
           sub: "Residual balance > 60 days",
-          valueText: `${fmtNum(data.due_over_60_days_millions, 2)}M EGP`,
+          valueText: `${Number(data.due_over_60_days_millions ?? 0).toFixed(1)}M EGP`,
           currentNum: data.due_over_60_days_millions,
           prevKey: "due_over_60_days_millions",
+          unitType: "millions",
           higherIsBetter: false,
-          footerText: "Overdue > 60d (Up = Red)"
+          footerText: "Overdue > 60d"
         }),
         cardHtml({
           title: "Collection Rate",
           sub: "Collected vs overdue ratio",
-          valueText: `${fmtNum(data.collection_rate_pct, 2)}%`,
+          valueText: fmtPct(data.collection_rate_pct),
           currentNum: data.collection_rate_pct,
           prevKey: "collection_rate_pct",
+          unitType: "pct",
           higherIsBetter: true,
-          footerText: "Collection Eff. (Up = Green)"
+          footerText: "Collection Eff."
         })
       ].join("");
 
@@ -510,38 +574,42 @@
         cardHtml({
           title: "Total Sales Orders",
           sub: "State in (sale, done)",
-          valueText: fmtNum(data.so_total_orders, 0),
+          valueText: fmtCount(data.so_total_orders),
           currentNum: data.so_total_orders,
           prevKey: "so_total_orders",
+          unitType: "count",
           higherIsBetter: true,
-          footerText: "Sales Orders (Up = Green)"
+          footerText: "Sales Orders"
         }),
         cardHtml({
           title: "Total GMV",
           sub: "Sales orders gross value",
-          valueText: `${fmtNum(data.so_total_gmv_millions, 2)}M EGP`,
+          valueText: `${Number(data.so_total_gmv_millions ?? 0).toFixed(1)}M EGP`,
           currentNum: data.so_total_gmv_millions,
           prevKey: "so_total_gmv_millions",
+          unitType: "millions",
           higherIsBetter: true,
-          footerText: "Gross Sales (Up = Green)"
+          footerText: "Gross Sales"
         }),
         cardHtml({
           title: "Invoiced Orders",
           sub: "Invoice status = invoiced",
-          valueText: fmtNum(data.invoiced_orders_count, 0),
+          valueText: fmtCount(data.invoiced_orders_count),
           currentNum: data.invoiced_orders_count,
           prevKey: "invoiced_orders_count",
+          unitType: "count",
           higherIsBetter: true,
-          footerText: "Billed Orders (Up = Green)"
+          footerText: "Billed Orders"
         }),
         cardHtml({
           title: "Average Order Value",
-          sub: "GMV per sales order (K EGP)",
-          valueText: `${fmtNum(data.avg_order_value_k, 2)}K EGP`,
+          sub: "GMV per sales order",
+          valueText: `${Number(data.avg_order_value_k ?? 0).toFixed(1)}K EGP`,
           currentNum: data.avg_order_value_k,
           prevKey: "avg_order_value_k",
+          unitType: "thousands",
           higherIsBetter: true,
-          footerText: "AOV (Up = Green)"
+          footerText: "AOV"
         })
       ].join("");
 
@@ -549,36 +617,40 @@
         cardHtml({
           title: "Purchase Orders",
           sub: "Confirmed POs • HORECA + MAS",
-          valueText: fmtNum(data.purchase_orders_count, 0),
+          valueText: fmtCount(data.purchase_orders_count),
           currentNum: data.purchase_orders_count,
           prevKey: "purchase_orders_count",
+          unitType: "count",
           higherIsBetter: true,
           footerText: "Purchase Orders"
         }),
         cardHtml({
           title: "Purchase Spend",
-          sub: "Total PO value in millions",
-          valueText: `${fmtNum(data.purchase_total_millions, 2)}M EGP`,
+          sub: "Total PO value",
+          valueText: `${Number(data.purchase_total_millions ?? 0).toFixed(1)}M EGP`,
           currentNum: data.purchase_total_millions,
           prevKey: "purchase_total_millions",
+          unitType: "millions",
           higherIsBetter: false,
-          footerText: "Spend (Up = Red)"
+          footerText: "Spend"
         }),
         cardHtml({
           title: "Open RFQs",
           sub: "Pending vendor quotations",
-          valueText: fmtNum(data.open_rfq_count, 0),
+          valueText: fmtCount(data.open_rfq_count),
           currentNum: data.open_rfq_count,
           prevKey: "open_rfq_count",
+          unitType: "count",
           higherIsBetter: false,
-          footerText: "Open RFQs (Up = Red)"
+          footerText: "Open RFQs"
         }),
         cardHtml({
           title: "Posted Vendor Bills",
           sub: "in_invoice / in_refund posted",
-          valueText: fmtNum(data.vendor_bills_count, 0),
+          valueText: fmtCount(data.vendor_bills_count),
           currentNum: data.vendor_bills_count,
           prevKey: "vendor_bills_count",
+          unitType: "count",
           higherIsBetter: false,
           footerText: "Vendor Bills"
         })
@@ -588,38 +660,42 @@
         cardHtml({
           title: "Delivered Orders",
           sub: "State = done • HORECA + MAS",
-          valueText: fmtNum(data.delivered_orders_count, 0),
+          valueText: fmtCount(data.delivered_orders_count),
           currentNum: data.delivered_orders_count,
           prevKey: "delivered_orders_count",
+          unitType: "count",
           higherIsBetter: true,
-          footerText: "Delivered (Up = Green)"
+          footerText: "Delivered"
         }),
         cardHtml({
           title: "Pending Deliveries",
           sub: "Active orders awaiting delivery",
-          valueText: fmtNum(data.pending_deliveries_count, 0),
+          valueText: fmtCount(data.pending_deliveries_count),
           currentNum: data.pending_deliveries_count,
           prevKey: "pending_deliveries_count",
+          unitType: "count",
           higherIsBetter: false,
-          footerText: "Pending (Up = Red)"
+          footerText: "Pending"
         }),
         cardHtml({
           title: "On-Time Delivery",
           sub: "Non-delayed orders ratio",
-          valueText: `${fmtNum(data.on_time_delivery_pct, 2)}%`,
+          valueText: fmtPct(data.on_time_delivery_pct),
           currentNum: data.on_time_delivery_pct,
           prevKey: "on_time_delivery_pct",
+          unitType: "pct",
           higherIsBetter: true,
-          footerText: "OTD Rate (Up = Green)"
+          footerText: "OTD Rate"
         }),
         cardHtml({
           title: "Delayed Shipments",
           sub: "Delivery date before today",
-          valueText: fmtNum(data.delayed_shipments_count, 0),
+          valueText: fmtCount(data.delayed_shipments_count),
           currentNum: data.delayed_shipments_count,
           prevKey: "delayed_shipments_count",
+          unitType: "count",
           higherIsBetter: false,
-          footerText: "Delays (Up = Red)"
+          footerText: "Delays"
         })
       ].join("");
 
@@ -627,38 +703,42 @@
         cardHtml({
           title: "Leads & Opportunities",
           sub: "Active pipeline • HORECA + MAS",
-          valueText: fmtNum(data.leads_opportunities_count, 0),
+          valueText: fmtCount(data.leads_opportunities_count),
           currentNum: data.leads_opportunities_count,
           prevKey: "leads_opportunities_count",
+          unitType: "count",
           higherIsBetter: true,
-          footerText: "Pipeline (Up = Green)"
+          footerText: "Pipeline"
         }),
         cardHtml({
           title: "Won Deals",
           sub: "Closed won opportunities",
-          valueText: fmtNum(data.won_deals_count, 0),
+          valueText: fmtCount(data.won_deals_count),
           currentNum: data.won_deals_count,
           prevKey: "won_deals_count",
+          unitType: "count",
           higherIsBetter: true,
-          footerText: "Won Deals (Up = Green)"
+          footerText: "Won Deals"
         }),
         cardHtml({
           title: "Open CS Tickets",
           sub: "Active customer support tickets",
-          valueText: fmtNum(data.open_tickets_count, 0),
+          valueText: fmtCount(data.open_tickets_count),
           currentNum: data.open_tickets_count,
           prevKey: "open_tickets_count",
+          unitType: "count",
           higherIsBetter: false,
-          footerText: "Open Tickets (Up = Red)"
+          footerText: "Open Tickets"
         }),
         cardHtml({
           title: "CSAT Score",
           sub: "Customer satisfaction rate",
-          valueText: `${fmtNum(data.csat_score_pct, 2)}%`,
+          valueText: fmtPct(data.csat_score_pct),
           currentNum: data.csat_score_pct,
           prevKey: "csat_score_pct",
+          unitType: "pct",
           higherIsBetter: true,
-          footerText: "CSAT (Up = Green)"
+          footerText: "CSAT"
         })
       ].join("");
 
