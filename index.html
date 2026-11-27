@@ -47,7 +47,7 @@
       text-align: left;
     }
 
-    .container { max-width: 1380px; margin: 0 auto; }
+    .container { max-width: 1420px; margin: 0 auto; }
 
     .header-card, .filter-bar, .section-card {
       background: var(--bg-card);
@@ -142,8 +142,8 @@
       gap: 8px;
     }
 
-    .kpi-title { font-weight: 700; font-size: 0.98rem; }
-    .kpi-sub { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+    .kpi-title { font-weight: 700; font-size: 0.96rem; }
+    .kpi-sub { color: var(--text-muted); font-size: 0.76rem; margin-top: 2px; }
 
     .kpi-value-row {
       display: flex;
@@ -154,7 +154,7 @@
     }
 
     .kpi-value {
-      font-size: 1.55rem;
+      font-size: 1.48rem;
       font-weight: 800;
       color: var(--primary);
     }
@@ -178,7 +178,7 @@
       display: flex;
       justify-content: space-between;
       gap: 8px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
       border-top: 1px dashed var(--border);
       padding-top: 8px;
@@ -214,7 +214,8 @@
       <button class="tab-btn" data-sec="sales" onclick="setSection('sales', this)">3. Sales</button>
       <button class="tab-btn" data-sec="purchase" onclick="setSection('purchase', this)">4. Purchase</button>
       <button class="tab-btn" data-sec="logistics" onclick="setSection('logistics', this)">5. Logistics</button>
-      <button class="tab-btn" data-sec="marketing_cs" onclick="setSection('marketing_cs', this)">6 & 7. Marketing & CS</button>
+      <button class="tab-btn" data-sec="marketing" onclick="setSection('marketing', this)">6. Marketing</button>
+      <button class="tab-btn" data-sec="cs" onclick="setSection('cs', this)">7. Customer Service</button>
     </div>
 
     <div class="section-card" id="sec-finance">
@@ -223,7 +224,7 @@
     </div>
 
     <div class="section-card" id="sec-collection">
-      <h3 style="margin-top:0;">2. Collection</h3>
+      <h3 style="margin-top:0;">2. Collection Department</h3>
       <div class="grid" id="collectionGrid"></div>
     </div>
 
@@ -242,9 +243,14 @@
       <div class="grid" id="logisticsGrid"></div>
     </div>
 
-    <div class="section-card" id="sec-marketing_cs">
-      <h3 style="margin-top:0;">6 & 7. Marketing & CS</h3>
-      <div class="grid" id="marketingCsGrid"></div>
+    <div class="section-card" id="sec-marketing">
+      <h3 style="margin-top:0;">6. Marketing</h3>
+      <div class="grid" id="marketingGrid"></div>
+    </div>
+
+    <div class="section-card" id="sec-cs">
+      <h3 style="margin-top:0;">7. Customer Service</h3>
+      <div class="grid" id="csGrid"></div>
     </div>
   </div>
 
@@ -253,72 +259,106 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplenVva2xkdmZ3aXh6cWd6Zm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU3OTMzMzksImV4cCI6MjExMTM2OTMzOX0.pxm-APp3U3v88a06vpeh7Ca9PDq0xjvyivPha7vEW-0";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing_cs"];
+    const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing", "cs"];
 
-    // الأرقام المحسوبة المستخرجة من PDF (Weekly Meeting 21-11-2026) كمرجع للمقارنة
+    // قيم Prev مأخوذة من الأرقام المحسوبة في Weekly Meeting 21-11-2026 (1).pdf (مع الإبقاء على Finance كما هي)
     const PREV_BENCHMARKS = {
-      // 1. Finance
-      total_payable_local: 29000000,         // 29 M
-      total_receivable_gl: 65400000,         // 65.4 M
-      pending_custodies_gl: 1600000,         // 1.6 M
-      pending_loans_gl: 1700000,             // 1.7 M
-      unreconciled_bills_count: 0,           // 0
-      unreconciled_invoices_count: 69,       // 69
-      orders_to_invoice_before_today: 141,   // 141
-      invoicing_after_11am_pct: 47,          // 47%
-      invoicing_over_24h_excl_friday_pct: 7, // 7%
-      expenses_budget_over_pct: 160,         // 160%
-      cancelled_invoices_count: 0,           // 0
+      // 1. Finance (كما هي بدون تعديل)
+      total_payable_local: 25800000,
+      total_receivable_gl: 68700000,
+      pending_custodies_gl: 1700000,
+      pending_loans_gl: 1700000,
+      unreconciled_bills_count: 0,
+      unreconciled_invoices_count: 17,
+      orders_to_invoice_before_today: 12,
+      invoicing_after_11am_pct: 75,
+      invoicing_over_24h_excl_friday_pct: 12,
+      expenses_budget_over_pct: 101,
+      cancelled_invoices_count: 580,
 
-      // 2. Collection
-      total_collected_millions: 3.0,         // 3 M
-      due_over_60_days_millions: 17.0,       // 17 M
-      collection_rate_pct: 68,               // 100% - 32% variance = 68%
+      // 2. Collection Department (من PDF صـ5)
+      dso_mas_credit: 45,
+      dso_mas_cash: 36,
+      dso_horeca_credit: 10,
+      dso_horeca_cash: 13,
+      dso_other: 58,
+      col_total_collected: 3000000,       // 3 M
+      total_visits: 20,                   // 3 (20)
+      col_due_over_60_days: 17000000,     // 17 M
+      col_variance_pct: 32,               // 32%
+      col_unpaid_cash_mas: 1800000,       // 112 (1.8 M)
+      col_unpaid_cash_horeca: 2800000,    // 25 (2.8 M)
+      sales_approved_credit_policy_pct: 72,
+      documented_credit_count: 85,
 
-      // 3. Sales
-      so_total_orders: 268,                  // 54 MAS + 214 Horeca
-      so_total_gmv_millions: 8.5,            // 4.9 M MAS + 3.6 M Horeca
-      invoiced_orders_count: 268,
-      avg_order_value_k: 31.7,
+      // 3. Sales (من PDF صـ7)
+      gmv_mas: 4900000,                   // 4.9 M
+      mas_customers: 35,
+      mas_orders: 54,
+      products_sold_mas: 62,
+      gmv_horeca: 3600000,                // 3.6 M
+      horeca_customers: 166,
+      horeca_orders: 214,
+      products_sold_horeca: 273,
+      crm_activities_count: 336,
+      new_customers_count: 10,
+      retention_rate_pct: 67,
+      sales_by_app_pct: 56,
+      active_customers_30d: 437,
 
-      // 4. Purchase
-      purchase_orders_count: 43,             // 43 PO
-      purchase_total_millions: 3.9,          // NearExpire / PO spend ref
-      open_rfq_count: 10,                    // 10 PO variance
-      vendor_bills_count: 43,
+      // 4. Purchase (من PDF صـ8)
+      stockout_top100_pct: 12,
+      stockout_products_count: 128,
+      available_products_count: 557,
+      new_products_count: 0,
+      products_purchased_count: 65,
+      purchase_orders_count: 43,
+      po_accuracy_pct: 100,
+      receipts_under_24h_pct: 28,
+      gross_margin_mas_pct: 10,
+      gross_margin_horeca_pct: 10,
+      margin_lte_1_pct_count: 6,
+      variance_of_prices_count: 10,
 
-      // 5. Logistics
-      delivered_orders_count: 498,           // 498 delivered
-      pending_deliveries_count: 23,          // 23 orders to validate
-      on_time_delivery_pct: 45.4,            // 45.4% On Time
-      delayed_shipments_count: 272,          // 236 + 36 delayed
+      // 5. Logistics (من PDF صـ9 و صـ11)
+      inventory_days: 28,
+      internal_transfers_count: 5,
+      company_transfers_count: 16,
+      nearexpire_products_count: 79,
+      returns_count: 498,
+      returns_mas_val: 726000,            // 20% (726 K)
+      returns_horeca_val: 217000,         // 80% (217 K)
+      orders_to_validate_count: 23,
+      validate_after_11am_pct: 43,
+      orders_lt_3000_mas: 1,
+      orders_lt_3000_horeca: 15,
 
-      // 6 & 7. Marketing & CS
-      leads_opportunities_count: 262,        // 262 registered in sheet
-      won_deals_count: 35,                   // 35 orders
-      open_tickets_count: 20,                // 20 open tickets
-      csat_score_pct: 87.6                   // 141 / 161 resolved = 87.6%
+      // 6. Marketing (من PDF صـ12)
+      marketing_views_count: 113261,      // Reach 113,261
+
+      // 7. Customer Service (من PDF صـ13)
+      cs_tickets_count: 161               // 161 Total Issues (Open 20, Resolved 141)
     };
 
-    // دالة اختصار المبالغ المالية لأقرب قيمة (مثال: 29,000,000 -> 29M | 26,554,768 -> 26.6M | 206,561 -> 206.6K)
+    // اختصار المبالغ المالية لأقرب قيمة (مثال: 29,000,000 -> 29M | 26,554,768 -> 26.6M | 206,561 -> 206.6K)
     function fmtMoneyShort(val, withCurrency = true) {
       const n = Number(val ?? 0);
       const abs = Math.abs(n);
       const sign = n < 0 ? "-" : "";
-      let formatted = "";
+      let shortStr = "";
 
       if (abs >= 1_000_000) {
         const m = Math.round((abs / 1_000_000) * 10) / 10;
-        formatted = `${sign}${Number.isInteger(m) ? m.toFixed(0) : m.toFixed(1)}M`;
+        shortStr = `${sign}${Number.isInteger(m) ? m.toFixed(0) : m.toFixed(1)}M`;
       } else if (abs >= 1_000) {
         const k = Math.round((abs / 1_000) * 10) / 10;
-        formatted = `${sign}${Number.isInteger(k) ? k.toFixed(0) : k.toFixed(1)}K`;
+        shortStr = `${sign}${Number.isInteger(k) ? k.toFixed(0) : k.toFixed(1)}K`;
       } else {
         const r = Math.round(abs * 10) / 10;
-        formatted = `${sign}${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}`;
+        shortStr = `${sign}${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}`;
       }
 
-      return withCurrency ? `${formatted} EGP` : formatted;
+      return withCurrency ? `${shortStr} EGP` : shortStr;
     }
 
     function fmtExactEGP(val) {
@@ -328,8 +368,9 @@
       })} EGP`;
     }
 
-    function fmtCount(val) {
-      return Math.round(Number(val ?? 0)).toLocaleString("en-US");
+    function fmtCount(val, suffix = "") {
+      const s = Math.round(Number(val ?? 0)).toLocaleString("en-US");
+      return suffix ? `${s} ${suffix}` : s;
     }
 
     function fmtPct(val) {
@@ -337,12 +378,10 @@
       return `${Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)}%`;
     }
 
-    function formatPrevDisplay(prevVal, unitType) {
-      if (unitType === "egp") return fmtMoneyShort(prevVal, false);
-      if (unitType === "millions") return `${Number.isInteger(prevVal) ? prevVal.toFixed(0) : prevVal.toFixed(1)}M`;
-      if (unitType === "thousands") return `${Number.isInteger(prevVal) ? prevVal.toFixed(0) : prevVal.toFixed(1)}K`;
+    function formatPrevDisplay(prevVal, unitType, suffix = "") {
+      if (unitType === "money") return fmtMoneyShort(prevVal, false);
       if (unitType === "pct") return fmtPct(prevVal);
-      return fmtCount(prevVal);
+      return fmtCount(prevVal, suffix);
     }
 
     function renderTrend(currentVal, prevVal, higherIsBetter = false) {
@@ -357,13 +396,12 @@
       const arrow = isUp ? "▲" : "▼";
       const isGood = higherIsBetter ? isUp : !isUp;
       const cls = isGood ? "trend-good" : "trend-bad";
-      const pctRaw = prev !== 0 ? Math.abs(((curr - prev) / Math.abs(prev)) * 100) : 100;
-      const pct = `${Math.round(pctRaw)}%`;
+      const pct = prev !== 0 ? `${Math.round(Math.abs(((curr - prev) / Math.abs(prev)) * 100))}%` : "New";
 
       return `<span class="trend-badge ${cls}">${arrow} ${pct}</span>`;
     }
 
-    function cardHtml({ title, sub, valueText, exactTitle = "", currentNum, prevKey, unitType = "count", higherIsBetter, footerText }) {
+    function cardHtml({ title, sub, valueText, exactTitle = "", currentNum, prevKey, unitType = "count", suffix = "", higherIsBetter, footerText }) {
       const prevVal = PREV_BENCHMARKS[prevKey] ?? 0;
       return `
         <div class="kpi-card" title="${exactTitle}">
@@ -379,7 +417,7 @@
           </div>
           <div class="kpi-footer">
             <span>${footerText}</span>
-            <span>Prev (21/11): ${formatPrevDisplay(prevVal, unitType)}</span>
+            <span>Prev: ${formatPrevDisplay(prevVal, unitType, suffix)}</span>
           </div>
         </div>
       `;
@@ -419,6 +457,7 @@
         return;
       }
 
+      // 1. Finance (محفوظ كما هو بدون تعديل)
       document.getElementById("financeGrid").innerHTML = [
         cardHtml({
           title: "Total Payable",
@@ -427,9 +466,9 @@
           exactTitle: fmtExactEGP(data.total_payable_local),
           currentNum: data.total_payable_local,
           prevKey: "total_payable_local",
-          unitType: "egp",
+          unitType: "money",
           higherIsBetter: false,
-          footerText: "Payables Local"
+          footerText: "General Ledger"
         }),
         cardHtml({
           title: "Total Receivable",
@@ -438,9 +477,9 @@
           exactTitle: fmtExactEGP(data.total_receivable_gl),
           currentNum: data.total_receivable_gl,
           prevKey: "total_receivable_gl",
-          unitType: "egp",
+          unitType: "money",
           higherIsBetter: true,
-          footerText: "Receivable Accounts"
+          footerText: "General Ledger"
         }),
         cardHtml({
           title: "Pending Custodies",
@@ -449,9 +488,9 @@
           exactTitle: fmtExactEGP(data.pending_custodies_gl),
           currentNum: data.pending_custodies_gl,
           prevKey: "pending_custodies_gl",
-          unitType: "egp",
+          unitType: "money",
           higherIsBetter: false,
-          footerText: "Custodies (عهد)"
+          footerText: "General Ledger"
         }),
         cardHtml({
           title: "Pending Loans",
@@ -460,39 +499,40 @@
           exactTitle: fmtExactEGP(data.pending_loans_gl),
           currentNum: data.pending_loans_gl,
           prevKey: "pending_loans_gl",
-          unitType: "egp",
+          unitType: "money",
           higherIsBetter: false,
-          footerText: "Loans (سلف)"
+          footerText: "General Ledger"
         }),
         cardHtml({
           title: "Unreconciled Bills",
-          sub: "Posted vendor bills with outstanding",
+          sub: "Vendors > Bills • True Outstanding",
           valueText: fmtCount(data.unreconciled_bills_count),
           currentNum: data.unreconciled_bills_count,
           prevKey: "unreconciled_bills_count",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Vendor Bills"
+          footerText: "Accounting"
         }),
         cardHtml({
           title: "Unreconciled Invoices",
-          sub: "Posted customer invoices with outstanding",
+          sub: "Customers > Invoices • True Outstanding",
           valueText: fmtCount(data.unreconciled_invoices_count),
           currentNum: data.unreconciled_invoices_count,
           prevKey: "unreconciled_invoices_count",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Customer Invoices"
+          footerText: "Accounting"
         }),
         cardHtml({
           title: "Orders To Invoice",
-          sub: "Before today delivery",
-          valueText: fmtCount(data.orders_to_invoice_before_today),
+          sub: "Sales > Orders • Delivery before today",
+          valueText: fmtCount(data.orders_to_invoice_before_today, "Invoice"),
           currentNum: data.orders_to_invoice_before_today,
           prevKey: "orders_to_invoice_before_today",
           unitType: "count",
+          suffix: "Invoice",
           higherIsBetter: false,
-          footerText: "Pending Invoicing"
+          footerText: "Sales"
         }),
         cardHtml({
           title: "Invoicing > 11:00 AM",
@@ -502,7 +542,7 @@
           prevKey: "invoicing_after_11am_pct",
           unitType: "pct",
           higherIsBetter: false,
-          footerText: "After 11:00 AM Rate"
+          footerText: "Sales"
         }),
         cardHtml({
           title: "Invoicing > 24H",
@@ -512,233 +552,592 @@
           prevKey: "invoicing_over_24h_excl_friday_pct",
           unitType: "pct",
           higherIsBetter: false,
-          footerText: "Over 24H Delay"
+          footerText: "Sales"
         }),
         cardHtml({
           title: "Expenses Budget",
           sub: `Actual: ${fmtMoneyShort(data.expenses_actual, true)}`,
-          valueText: fmtPct(data.expenses_budget_over_pct),
+          valueText: `${fmtPct(data.expenses_budget_over_pct)} over`,
           exactTitle: fmtExactEGP(data.expenses_actual),
           currentNum: data.expenses_budget_over_pct,
           prevKey: "expenses_budget_over_pct",
           unitType: "pct",
           higherIsBetter: false,
-          footerText: "Expenses vs Budget"
+          footerText: "Profit & Loss"
         }),
         cardHtml({
           title: "Cancelled Invoices",
-          sub: "State = cancel",
+          sub: "Customers > Invoices • Cancelled",
           valueText: fmtCount(data.cancelled_invoices_count),
           currentNum: data.cancelled_invoices_count,
           prevKey: "cancelled_invoices_count",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Cancelled Docs"
+          footerText: "Accounting"
         })
       ].join("");
 
+      // 2. Collection Department (من ScoreCards Structure)
       document.getElementById("collectionGrid").innerHTML = [
         cardHtml({
           title: "Total Collected",
-          sub: "Posted out_invoice collected",
-          valueText: `${Number(data.total_collected_millions ?? 0).toFixed(1)}M EGP`,
-          currentNum: data.total_collected_millions,
-          prevKey: "total_collected_millions",
-          unitType: "millions",
+          sub: "Sum of collected • Collection Team",
+          valueText: fmtMoneyShort(data.col_total_collected, true),
+          exactTitle: fmtExactEGP(data.col_total_collected),
+          currentNum: data.col_total_collected,
+          prevKey: "col_total_collected",
+          unitType: "money",
           higherIsBetter: true,
-          footerText: "Collected Amount"
+          footerText: "Collection Team"
         }),
         cardHtml({
-          title: "Due Over 60 Days",
-          sub: "Residual balance > 60 days",
-          valueText: `${Number(data.due_over_60_days_millions ?? 0).toFixed(1)}M EGP`,
-          currentNum: data.due_over_60_days_millions,
-          prevKey: "due_over_60_days_millions",
-          unitType: "millions",
+          title: "DUE > 60 Days",
+          sub: "Aged Receivable • Total due > 60 days",
+          valueText: fmtMoneyShort(data.col_due_over_60_days, true),
+          exactTitle: fmtExactEGP(data.col_due_over_60_days),
+          currentNum: data.col_due_over_60_days,
+          prevKey: "col_due_over_60_days",
+          unitType: "money",
           higherIsBetter: false,
-          footerText: "Overdue > 60d"
+          footerText: "Aged Receivable"
         }),
         cardHtml({
-          title: "Collection Rate",
-          sub: "Collected vs overdue ratio",
-          valueText: fmtPct(data.collection_rate_pct),
-          currentNum: data.collection_rate_pct,
-          prevKey: "collection_rate_pct",
+          title: "Collection Variance",
+          sub: "Unpaid Cash / Total Cash",
+          valueText: fmtPct(data.col_variance_pct),
+          currentNum: data.col_variance_pct,
+          prevKey: "col_variance_pct",
           unitType: "pct",
-          higherIsBetter: true,
-          footerText: "Collection Eff."
-        })
-      ].join("");
-
-      document.getElementById("salesGrid").innerHTML = [
+          higherIsBetter: false,
+          footerText: "Accounting"
+        }),
         cardHtml({
-          title: "Total Sales Orders",
-          sub: "State in (sale, done)",
-          valueText: fmtCount(data.so_total_orders),
-          currentNum: data.so_total_orders,
-          prevKey: "so_total_orders",
+          title: "DSO MAS (Credit)",
+          sub: "Due credit MAS / Sales credit 3M",
+          valueText: fmtCount(data.dso_mas_credit, "days"),
+          currentNum: data.dso_mas_credit,
+          prevKey: "dso_mas_credit",
           unitType: "count",
+          suffix: "days",
+          higherIsBetter: false,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "DSO MAS (Cash)",
+          sub: "Due Cash MAS / Sales Cash 3M",
+          valueText: fmtCount(data.dso_mas_cash, "days"),
+          currentNum: data.dso_mas_cash,
+          prevKey: "dso_mas_cash",
+          unitType: "count",
+          suffix: "days",
+          higherIsBetter: false,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "DSO Horeca (Credit)",
+          sub: "Due credit Horeca / Sales Credit 3M",
+          valueText: fmtCount(data.dso_horeca_credit, "days"),
+          currentNum: data.dso_horeca_credit,
+          prevKey: "dso_horeca_credit",
+          unitType: "count",
+          suffix: "days",
+          higherIsBetter: false,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "DSO Horeca (Cash)",
+          sub: "Due Cash Horeca / Sales Cash 3M",
+          valueText: fmtCount(data.dso_horeca_cash, "days"),
+          currentNum: data.dso_horeca_cash,
+          prevKey: "dso_horeca_cash",
+          unitType: "count",
+          suffix: "days",
+          higherIsBetter: false,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "DSO Other",
+          sub: "Due other / Sales Other 3M",
+          valueText: fmtCount(data.dso_other, "days"),
+          currentNum: data.dso_other,
+          prevKey: "dso_other",
+          unitType: "count",
+          suffix: "days",
+          higherIsBetter: false,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Unpaid Cash MAS",
+          sub: `Exact: ${fmtExactEGP(data.col_unpaid_cash_mas)}`,
+          valueText: fmtMoneyShort(data.col_unpaid_cash_mas, true),
+          exactTitle: fmtExactEGP(data.col_unpaid_cash_mas),
+          currentNum: data.col_unpaid_cash_mas,
+          prevKey: "col_unpaid_cash_mas",
+          unitType: "money",
+          higherIsBetter: false,
+          footerText: "Contacts > Total Due"
+        }),
+        cardHtml({
+          title: "Unpaid Cash Horeca",
+          sub: `Exact: ${fmtExactEGP(data.col_unpaid_cash_horeca)}`,
+          valueText: fmtMoneyShort(data.col_unpaid_cash_horeca, true),
+          exactTitle: fmtExactEGP(data.col_unpaid_cash_horeca),
+          currentNum: data.col_unpaid_cash_horeca,
+          prevKey: "col_unpaid_cash_horeca",
+          unitType: "money",
+          higherIsBetter: false,
+          footerText: "Contacts > Total Due"
+        }),
+        cardHtml({
+          title: "Total Visits",
+          sub: "Count of Visits • Collection Team",
+          valueText: fmtCount(data.total_visits),
+          currentNum: data.total_visits,
+          prevKey: "total_visits",
+          unitType: "count",
+          higherIsBetter: true,
+          footerText: "Collection Team"
+        }),
+        cardHtml({
+          title: "Sales Approved By Credit Policy",
+          sub: "Customers with due / total customers",
+          valueText: fmtPct(data.sales_approved_credit_policy_pct),
+          currentNum: data.sales_approved_credit_policy_pct,
+          prevKey: "sales_approved_credit_policy_pct",
+          unitType: "pct",
           higherIsBetter: true,
           footerText: "Sales Orders"
         }),
         cardHtml({
-          title: "Total GMV",
-          sub: "Sales orders gross value",
-          valueText: `${Number(data.so_total_gmv_millions ?? 0).toFixed(1)}M EGP`,
-          currentNum: data.so_total_gmv_millions,
-          prevKey: "so_total_gmv_millions",
-          unitType: "millions",
-          higherIsBetter: true,
-          footerText: "Gross Sales"
-        }),
-        cardHtml({
-          title: "Invoiced Orders",
-          sub: "Invoice status = invoiced",
-          valueText: fmtCount(data.invoiced_orders_count),
-          currentNum: data.invoiced_orders_count,
-          prevKey: "invoiced_orders_count",
+          title: "Documented Credit",
+          sub: "Count of documents",
+          valueText: fmtCount(data.documented_credit_count),
+          currentNum: data.documented_credit_count,
+          prevKey: "documented_credit_count",
           unitType: "count",
           higherIsBetter: true,
-          footerText: "Billed Orders"
-        }),
-        cardHtml({
-          title: "Average Order Value",
-          sub: "GMV per sales order",
-          valueText: `${Number(data.avg_order_value_k ?? 0).toFixed(1)}K EGP`,
-          currentNum: data.avg_order_value_k,
-          prevKey: "avg_order_value_k",
-          unitType: "thousands",
-          higherIsBetter: true,
-          footerText: "AOV"
+          footerText: "Documented Credit"
         })
       ].join("");
 
+      // 3. Sales (من ScoreCards Structure)
+      document.getElementById("salesGrid").innerHTML = [
+        cardHtml({
+          title: "GMV MAS > Average Order",
+          sub: `Exact: ${fmtExactEGP(data.gmv_mas)}`,
+          valueText: fmtMoneyShort(data.gmv_mas, true),
+          exactTitle: fmtExactEGP(data.gmv_mas),
+          currentNum: data.gmv_mas,
+          prevKey: "gmv_mas",
+          unitType: "money",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "MAS Customers",
+          sub: "Count of Customers (MAS)",
+          valueText: fmtCount(data.mas_customers, "Customer"),
+          currentNum: data.mas_customers,
+          prevKey: "mas_customers",
+          unitType: "count",
+          suffix: "Customer",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "MAS Orders",
+          sub: "Count of Orders (MAS)",
+          valueText: fmtCount(data.mas_orders),
+          currentNum: data.mas_orders,
+          prevKey: "mas_orders",
+          unitType: "count",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Products sold MAS",
+          sub: "Count of Products (MAS)",
+          valueText: fmtCount(data.products_sold_mas, "Product"),
+          currentNum: data.products_sold_mas,
+          prevKey: "products_sold_mas",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "GMV Horeca > Average Horeca",
+          sub: `Exact: ${fmtExactEGP(data.gmv_horeca)}`,
+          valueText: fmtMoneyShort(data.gmv_horeca, true),
+          exactTitle: fmtExactEGP(data.gmv_horeca),
+          currentNum: data.gmv_horeca,
+          prevKey: "gmv_horeca",
+          unitType: "money",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Horeca Customers",
+          sub: "Count of Customers (Horeca)",
+          valueText: fmtCount(data.horeca_customers, "Customer"),
+          currentNum: data.horeca_customers,
+          prevKey: "horeca_customers",
+          unitType: "count",
+          suffix: "Customer",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Horeca Orders",
+          sub: "Count of Orders (Horeca)",
+          valueText: fmtCount(data.horeca_orders),
+          currentNum: data.horeca_orders,
+          prevKey: "horeca_orders",
+          unitType: "count",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Products sold Horeca",
+          sub: "Count of Products (Horeca)",
+          valueText: fmtCount(data.products_sold_horeca, "Product"),
+          currentNum: data.products_sold_horeca,
+          prevKey: "products_sold_horeca",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Active Customers",
+          sub: "Customers sales during 30 days",
+          valueText: fmtCount(data.active_customers_30d),
+          currentNum: data.active_customers_30d,
+          prevKey: "active_customers_30d",
+          unitType: "count",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "New Customers",
+          sub: "Created on belongs to Horeca",
+          valueText: fmtCount(data.new_customers_count, "New"),
+          currentNum: data.new_customers_count,
+          prevKey: "new_customers_count",
+          unitType: "count",
+          suffix: "New",
+          higherIsBetter: true,
+          footerText: "Contacts"
+        }),
+        cardHtml({
+          title: "Retention Rate",
+          sub: "Ordered last 30-60 days continued",
+          valueText: fmtPct(data.retention_rate_pct),
+          currentNum: data.retention_rate_pct,
+          prevKey: "retention_rate_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Sales By App",
+          sub: "Horeca orders by App / total orders",
+          valueText: fmtPct(data.sales_by_app_pct),
+          currentNum: data.sales_by_app_pct,
+          prevKey: "sales_by_app_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "CRM Activities",
+          sub: "Count of activities (Calls)",
+          valueText: fmtCount(data.crm_activities_count, "call"),
+          currentNum: data.crm_activities_count,
+          prevKey: "crm_activities_count",
+          unitType: "count",
+          suffix: "call",
+          higherIsBetter: true,
+          footerText: "CRM"
+        })
+      ].join("");
+
+      // 4. Purchase (من ScoreCards Structure)
       document.getElementById("purchaseGrid").innerHTML = [
         cardHtml({
+          title: "StockOut - top 100 SKU",
+          sub: "Top 100 sales vs available stock/day",
+          valueText: fmtPct(data.stockout_top100_pct),
+          currentNum: data.stockout_top100_pct,
+          prevKey: "stockout_top100_pct",
+          unitType: "pct",
+          higherIsBetter: false,
+          footerText: "Inventory"
+        }),
+        cardHtml({
+          title: "StockOut Products",
+          sub: "Products out of stock (<=0)",
+          valueText: fmtCount(data.stockout_products_count, "Product"),
+          currentNum: data.stockout_products_count,
+          prevKey: "stockout_products_count",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: false,
+          footerText: "Inventory"
+        }),
+        cardHtml({
+          title: "Available Products",
+          sub: "Products in stock (>0)",
+          valueText: fmtCount(data.available_products_count, "Product"),
+          currentNum: data.available_products_count,
+          prevKey: "available_products_count",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: true,
+          footerText: "Inventory"
+        }),
+        cardHtml({
+          title: "New Products",
+          sub: "Count of products created on",
+          valueText: fmtCount(data.new_products_count, "Product"),
+          currentNum: data.new_products_count,
+          prevKey: "new_products_count",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: true,
+          footerText: "Inventory"
+        }),
+        cardHtml({
+          title: "Products Purchased",
+          sub: "Count of products purchased",
+          valueText: fmtCount(data.products_purchased_count, "Product"),
+          currentNum: data.products_purchased_count,
+          prevKey: "products_purchased_count",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: true,
+          footerText: "Purchase"
+        }),
+        cardHtml({
           title: "Purchase Orders",
-          sub: "Confirmed POs • HORECA + MAS",
-          valueText: fmtCount(data.purchase_orders_count),
+          sub: "Count of PO Created",
+          valueText: fmtCount(data.purchase_orders_count, "PO"),
           currentNum: data.purchase_orders_count,
           prevKey: "purchase_orders_count",
           unitType: "count",
+          suffix: "PO",
           higherIsBetter: true,
+          footerText: "Purchase"
+        }),
+        cardHtml({
+          title: "Accuracy of purchase orders",
+          sub: "Ordered qty vs billed qty",
+          valueText: fmtPct(data.po_accuracy_pct),
+          currentNum: data.po_accuracy_pct,
+          prevKey: "po_accuracy_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Purchase"
+        }),
+        cardHtml({
+          title: "Reciepts Date <24H",
+          sub: "Creation date vs receipt date",
+          valueText: fmtPct(data.receipts_under_24h_pct),
+          currentNum: data.receipts_under_24h_pct,
+          prevKey: "receipts_under_24h_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Purchase"
+        }),
+        cardHtml({
+          title: "Gorss Margin MAS",
+          sub: "MAS sales with Margin",
+          valueText: fmtPct(data.gross_margin_mas_pct),
+          currentNum: data.gross_margin_mas_pct,
+          prevKey: "gross_margin_mas_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Gross Margin Horeca",
+          sub: "Horeca sales with Margin",
+          valueText: fmtPct(data.gross_margin_horeca_pct),
+          currentNum: data.gross_margin_horeca_pct,
+          prevKey: "gross_margin_horeca_pct",
+          unitType: "pct",
+          higherIsBetter: true,
+          footerText: "Sales Reporting"
+        }),
+        cardHtml({
+          title: "Margin <= 1%",
+          sub: "Sale price vs List Price",
+          valueText: fmtCount(data.margin_lte_1_pct_count, "Product"),
+          currentNum: data.margin_lte_1_pct_count,
+          prevKey: "margin_lte_1_pct_count",
+          unitType: "count",
+          suffix: "Product",
+          higherIsBetter: false,
+          footerText: "Inventory"
+        }),
+        cardHtml({
+          title: "Variance of Prices",
+          sub: "PO price variance messages",
+          valueText: fmtCount(data.variance_of_prices_count, "PO"),
+          currentNum: data.variance_of_prices_count,
+          prevKey: "variance_of_prices_count",
+          unitType: "count",
+          suffix: "PO",
+          higherIsBetter: false,
           footerText: "Purchase Orders"
-        }),
-        cardHtml({
-          title: "Purchase Spend",
-          sub: "Total PO value",
-          valueText: `${Number(data.purchase_total_millions ?? 0).toFixed(1)}M EGP`,
-          currentNum: data.purchase_total_millions,
-          prevKey: "purchase_total_millions",
-          unitType: "millions",
-          higherIsBetter: false,
-          footerText: "Spend"
-        }),
-        cardHtml({
-          title: "Open RFQs",
-          sub: "Pending vendor quotations",
-          valueText: fmtCount(data.open_rfq_count),
-          currentNum: data.open_rfq_count,
-          prevKey: "open_rfq_count",
-          unitType: "count",
-          higherIsBetter: false,
-          footerText: "Open RFQs"
-        }),
-        cardHtml({
-          title: "Posted Vendor Bills",
-          sub: "in_invoice / in_refund posted",
-          valueText: fmtCount(data.vendor_bills_count),
-          currentNum: data.vendor_bills_count,
-          prevKey: "vendor_bills_count",
-          unitType: "count",
-          higherIsBetter: false,
-          footerText: "Vendor Bills"
         })
       ].join("");
 
+      // 5. Logistics (من ScoreCards Structure)
       document.getElementById("logisticsGrid").innerHTML = [
         cardHtml({
-          title: "Delivered Orders",
-          sub: "State = done • HORECA + MAS",
-          valueText: fmtCount(data.delivered_orders_count),
-          currentNum: data.delivered_orders_count,
-          prevKey: "delivered_orders_count",
+          title: "Inventory Days",
+          sub: "Remaining Qty / Avg Qty sold/day (90d)",
+          valueText: fmtCount(data.inventory_days, "Days"),
+          currentNum: data.inventory_days,
+          prevKey: "inventory_days",
           unitType: "count",
-          higherIsBetter: true,
-          footerText: "Delivered"
+          suffix: "Days",
+          higherIsBetter: false,
+          footerText: "Inventory"
         }),
         cardHtml({
-          title: "Pending Deliveries",
-          sub: "Active orders awaiting delivery",
-          valueText: fmtCount(data.pending_deliveries_count),
-          currentNum: data.pending_deliveries_count,
-          prevKey: "pending_deliveries_count",
+          title: "Internal Transfers",
+          sub: "Count of Internal transfers",
+          valueText: fmtCount(data.internal_transfers_count, "Transfers"),
+          currentNum: data.internal_transfers_count,
+          prevKey: "internal_transfers_count",
+          unitType: "count",
+          suffix: "Transfers",
+          higherIsBetter: false,
+          footerText: "Inventory Operations"
+        }),
+        cardHtml({
+          title: "Company Transfers",
+          sub: "Orders with partner MAS or Horeca Smart",
+          valueText: fmtCount(data.company_transfers_count, "Transfers"),
+          currentNum: data.company_transfers_count,
+          prevKey: "company_transfers_count",
+          unitType: "count",
+          suffix: "Transfers",
+          higherIsBetter: false,
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "NearExpire Products",
+          sub: "Expired or near expire products",
+          valueText: fmtCount(data.nearexpire_products_count),
+          currentNum: data.nearexpire_products_count,
+          prevKey: "nearexpire_products_count",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Pending"
+          footerText: "Inventory"
         }),
         cardHtml({
-          title: "On-Time Delivery",
-          sub: "Non-delayed orders ratio",
-          valueText: fmtPct(data.on_time_delivery_pct),
-          currentNum: data.on_time_delivery_pct,
-          prevKey: "on_time_delivery_pct",
+          title: "Returns Count > Value",
+          sub: "Orders with nothing to invoice",
+          valueText: fmtCount(data.returns_count),
+          currentNum: data.returns_count,
+          prevKey: "returns_count",
+          unitType: "count",
+          higherIsBetter: false,
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "Returns MAS",
+          sub: `Exact: ${fmtExactEGP(data.returns_mas_val)}`,
+          valueText: fmtMoneyShort(data.returns_mas_val, true),
+          exactTitle: fmtExactEGP(data.returns_mas_val),
+          currentNum: data.returns_mas_val,
+          prevKey: "returns_mas_val",
+          unitType: "money",
+          higherIsBetter: false,
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "Returns Horeca",
+          sub: `Exact: ${fmtExactEGP(data.returns_horeca_val)}`,
+          valueText: fmtMoneyShort(data.returns_horeca_val, true),
+          exactTitle: fmtExactEGP(data.returns_horeca_val),
+          currentNum: data.returns_horeca_val,
+          prevKey: "returns_horeca_val",
+          unitType: "money",
+          higherIsBetter: false,
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "Orders To Validate",
+          sub: "Waiting or ready (Before Today)",
+          valueText: fmtCount(data.orders_to_validate_count, "Order"),
+          currentNum: data.orders_to_validate_count,
+          prevKey: "orders_to_validate_count",
+          unitType: "count",
+          suffix: "Order",
+          higherIsBetter: false,
+          footerText: "Inventory Operations"
+        }),
+        cardHtml({
+          title: "Validate > 11:00 AM",
+          sub: "Scheduled date vs transfer date",
+          valueText: fmtPct(data.validate_after_11am_pct),
+          currentNum: data.validate_after_11am_pct,
+          prevKey: "validate_after_11am_pct",
           unitType: "pct",
-          higherIsBetter: true,
-          footerText: "OTD Rate"
+          higherIsBetter: false,
+          footerText: "Inventory Operations"
         }),
         cardHtml({
-          title: "Delayed Shipments",
-          sub: "Delivery date before today",
-          valueText: fmtCount(data.delayed_shipments_count),
-          currentNum: data.delayed_shipments_count,
-          prevKey: "delayed_shipments_count",
+          title: "Orders < 3000 MAs",
+          sub: "Total <= 3000 MAS",
+          valueText: fmtCount(data.orders_lt_3000_mas),
+          currentNum: data.orders_lt_3000_mas,
+          prevKey: "orders_lt_3000_mas",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Delays"
+          footerText: "Sales Orders"
+        }),
+        cardHtml({
+          title: "Orders < 3000 Horeca",
+          sub: "Total <= 3000 Horeca",
+          valueText: fmtCount(data.orders_lt_3000_horeca),
+          currentNum: data.orders_lt_3000_horeca,
+          prevKey: "orders_lt_3000_horeca",
+          unitType: "count",
+          higherIsBetter: false,
+          footerText: "Sales Orders"
         })
       ].join("");
 
-      document.getElementById("marketingCsGrid").innerHTML = [
+      // 6. Marketing (من ScoreCards Structure)
+      document.getElementById("marketingGrid").innerHTML = [
         cardHtml({
-          title: "Leads & Opportunities",
-          sub: "Active pipeline • HORECA + MAS",
-          valueText: fmtCount(data.leads_opportunities_count),
-          currentNum: data.leads_opportunities_count,
-          prevKey: "leads_opportunities_count",
+          title: "Views",
+          sub: "Social Media • Meta",
+          valueText: fmtCount(data.marketing_views_count),
+          currentNum: data.marketing_views_count,
+          prevKey: "marketing_views_count",
           unitType: "count",
           higherIsBetter: true,
-          footerText: "Pipeline"
-        }),
+          footerText: "Marketing Department"
+        })
+      ].join("");
+
+      // 7. Customer Service (من ScoreCards Structure)
+      document.getElementById("csGrid").innerHTML = [
         cardHtml({
-          title: "Won Deals",
-          sub: "Closed won opportunities",
-          valueText: fmtCount(data.won_deals_count),
-          currentNum: data.won_deals_count,
-          prevKey: "won_deals_count",
-          unitType: "count",
-          higherIsBetter: true,
-          footerText: "Won Deals"
-        }),
-        cardHtml({
-          title: "Open CS Tickets",
-          sub: "Active customer support tickets",
-          valueText: fmtCount(data.open_tickets_count),
-          currentNum: data.open_tickets_count,
-          prevKey: "open_tickets_count",
+          title: "Count Of Tickets",
+          sub: "Help desk • Tickets",
+          valueText: fmtCount(data.cs_tickets_count),
+          currentNum: data.cs_tickets_count,
+          prevKey: "cs_tickets_count",
           unitType: "count",
           higherIsBetter: false,
-          footerText: "Open Tickets"
-        }),
-        cardHtml({
-          title: "CSAT Score",
-          sub: "Customer satisfaction rate",
-          valueText: fmtPct(data.csat_score_pct),
-          currentNum: data.csat_score_pct,
-          prevKey: "csat_score_pct",
-          unitType: "pct",
-          higherIsBetter: true,
-          footerText: "CSAT"
+          footerText: "Customer Service"
         })
       ].join("");
 
