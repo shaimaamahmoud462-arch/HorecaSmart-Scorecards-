@@ -107,7 +107,7 @@
     .btn-primary:hover { background: var(--primary-hover); }
 
     .filter-bar, .budget-bar {
-      display: flex;
+      display: flex !important;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
@@ -128,7 +128,7 @@
       padding: 8px 12px;
       border-radius: 8px;
       font-weight: 700;
-      width: 170px;
+      width: 180px;
     }
 
     /* إخفاء أي عنصر خاص بفلتر الشركة نهائياً */
@@ -255,14 +255,15 @@
       <span id="statusText" style="color:var(--text-muted); font-size:0.85rem;">Loading...</span>
     </div>
 
-    <div class="budget-bar">
+    <!-- شريط إدخال البادجت وزر Save Budget -->
+    <div class="budget-bar" id="budgetSettingBar">
       <div>
         <div style="font-weight:700;">Manual Expenses Budget Setting</div>
         <div style="color:var(--text-muted); font-size:0.8rem;">Enter manual budget (EGP) to calculate Expenses Budget %</div>
       </div>
       <div class="filter-group">
-        <input type="number" id="manualBudgetInput" class="budget-input" value="100000" step="1000" min="1" />
-        <button class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
+        <input type="number" id="manualBudgetInput" class="budget-input" value="100000" step="1000" min="1" placeholder="Budget (EGP)" />
+        <button type="button" id="saveBudgetBtn" class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
         <span id="budgetStatus" style="color:var(--text-muted); font-size:0.82rem;"></span>
       </div>
     </div>
@@ -505,14 +506,13 @@
         .upsert({ metric_key: "expenses_budget", budget_amount: val }, { onConflict: "metric_key" });
 
       if (error) {
-        // لو الجدول غير مسموح بالكتابة من anon، نحسب فوراً محلياً ونعرض الملاحظة
         if (latestData) {
           const actual = Number(latestData.expenses_actual ?? 0);
           latestData.expenses_budget_manual = val;
           latestData.expenses_budget_over_pct = Number(((actual / val) * 100).toFixed(2));
           renderAllCards(latestData);
         }
-        budgetStatusEl.textContent = `Applied locally (${fmtMoneyShort(val, true)})`;
+        budgetStatusEl.textContent = `Applied (${fmtMoneyShort(val, true)})`;
         return;
       }
 
