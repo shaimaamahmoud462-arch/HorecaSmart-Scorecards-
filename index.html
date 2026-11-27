@@ -200,6 +200,12 @@
       color: var(--primary);
     }
 
+    .kpi-meta-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
     .trend-badge {
       display: inline-flex;
       align-items: center;
@@ -261,7 +267,7 @@
         <div style="color:var(--text-muted); font-size:0.8rem;">Enter manual budget (EGP) to calculate Expenses Budget % (from start of filtered month)</div>
       </div>
       <div class="filter-group">
-        <input type="number" id="manualBudgetInput" class="budget-input" value="100000" step="1000" min="1" placeholder="Budget (EGP)" />
+        <input type="number" id="manualBudgetInput" class="budget-input" value="200000" step="1000" min="1" placeholder="Budget (EGP)" />
         <button type="button" id="saveBudgetBtn" class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
         <span id="budgetStatus" style="color:var(--text-muted); font-size:0.82rem;"></span>
       </div>
@@ -322,7 +328,6 @@
     const SECTIONS = ["finance", "collection", "sales", "purchase", "logistics", "marketing", "cs"];
     let latestData = null;
 
-    // قيم Prev من ملف Weekly Meeting 21-11-2026 (1).pdf (اعتماد 69 لـ Unreconciled Invoices)
     const PREV_BENCHMARKS = {
       total_payable_local: 25800000,
       total_receivable_gl: 68700000,
@@ -453,7 +458,7 @@
       return `<span class="trend-badge ${cls}">${arrow} ${pct}</span>`;
     }
 
-    function cardHtml({ title, sub, valueText, exactTitle = "", currentNum, prevKey, unitType = "count", suffix = "", higherIsBetter, footerText }) {
+    function cardHtml({ title, sub, valueText, rightText = "", exactTitle = "", currentNum, prevKey, unitType = "count", suffix = "", higherIsBetter, footerText }) {
       const prevVal = PREV_BENCHMARKS[prevKey] ?? 0;
       return `
         <div class="kpi-card" title="${exactTitle}">
@@ -466,6 +471,7 @@
           </div>
           <div class="kpi-value-row">
             <div class="kpi-value">${valueText}</div>
+            ${rightText ? `<span class="kpi-meta-tag">${rightText}</span>` : ""}
           </div>
           <div class="kpi-footer">
             <span>${footerText}</span>
@@ -504,19 +510,16 @@
         .from("budget_settings")
         .upsert({ metric_key: "expenses_budget", budget_amount: val }, { onConflict: "metric_key" });
 
-      if (error) {
-        if (latestData) {
-          const actual = Number(latestData.expenses_actual ?? 0);
-          latestData.expenses_budget_manual = val;
-          latestData.expenses_budget_over_pct = Number(((actual / val) * 100).toFixed(2));
-          renderAllCards(latestData);
-        }
-        budgetStatusEl.textContent = `Applied (${fmtMoneyShort(val, true)})`;
-        return;
+      if (latestData) {
+        const actual = Number(latestData.expenses_actual ?? 0);
+        latestData.expenses_budget_manual = val;
+        latestData.expenses_budget_over_pct = Number(((actual / val) * 100).toFixed(2));
+        renderAllCards(latestData);
       }
 
-      budgetStatusEl.textContent = `Saved (${fmtMoneyShort(val, true)})`;
-      await loadScorecard();
+      budgetStatusEl.textContent = error
+        ? `Applied locally (${fmtMoneyShort(val, true)})`
+        : `Saved (${fmtMoneyShort(val, true)})`;
     }
 
     function renderAllCards(data) {
@@ -616,7 +619,7 @@
         }),
         cardHtml({
           title: "Invoicing > 24H",
-          sub: `Count: ${fmtCount(data.invoicing_over_24h_count)} (Excl. Fri)`,
+          sub: `Count: ${fmtCount(data.invoicing_over_24h_count)} (+1d; Thu +2d)`,
           valueText: fmtPct(data.invoicing_over_24h_excl_friday_pct),
           currentNum: data.invoicing_over_24h_excl_friday_pct,
           prevKey: "invoicing_over_24h_excl_friday_pct",
@@ -627,7 +630,8 @@
         cardHtml({
           title: "Expenses Budget",
           sub: `Expenses: ${fmtMoneyShort(data.expenses_actual, true)}${expRangeLabel} • Budget: ${fmtMoneyShort(data.expenses_budget_manual, true)}`,
-          valueText: `${fmtPct(data.expenses_budget_over_pct)} over`,
+          valueText: fmtMoneyShort(data.expenses_actual, true),
+          rightText: `${fmtPct(data.expenses_budget_over_pct)} over`,
           exactTitle: fmtExactEGP(data.expenses_actual),
           currentNum: data.expenses_budget_over_pct,
           prevKey: "expenses_budget_over_pct",
@@ -637,7 +641,7 @@
         }),
         cardHtml({
           title: "Cancelled Invoices",
-          sub: "Cancelled customer invoices",
+          sub: "By Accounting Date (out_invoice • cancel)",
           valueText: fmtCount(data.cancelled_invoices_count, "Invoice"),
           currentNum: data.cancelled_invoices_count,
           prevKey: "cancelled_invoices_count",
