@@ -531,6 +531,8 @@
         ? ` (${data.expenses_period_start} -> ${data.expenses_period_end})`
         : "";
 
+      const invOver24Pct = 6;
+
       document.getElementById("financeGrid").innerHTML = [
         cardHtml({
           title: "Total Payable",
@@ -619,9 +621,9 @@
         }),
         cardHtml({
           title: "Invoicing > 24H",
-          sub: `Count: ${fmtCount(data.invoicing_over_24h_count)} (+1d; Thu +2d)`,
-          valueText: fmtPct(data.invoicing_over_24h_excl_friday_pct),
-          currentNum: data.invoicing_over_24h_excl_friday_pct,
+          sub: "Temporary value (6%)",
+          valueText: fmtPct(invOver24Pct),
+          currentNum: invOver24Pct,
           prevKey: "invoicing_over_24h_excl_friday_pct",
           unitType: "pct",
           higherIsBetter: false,
