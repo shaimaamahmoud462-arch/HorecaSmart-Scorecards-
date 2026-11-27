@@ -270,14 +270,19 @@
       cancelled_invoices_count: 580,
       total_collected_millions: 14.5,
       due_over_60_days_millions: 2.1,
+      collection_rate_pct: 85,
       so_total_orders: 1200,
       so_total_gmv_millions: 85.0,
+      invoiced_orders_count: 1050,
+      avg_order_value_k: 70.0,
       purchase_orders_count: 180,
       purchase_total_millions: 22.0,
       open_rfq_count: 14,
+      vendor_bills_count: 165,
       delivered_orders_count: 1120,
       pending_deliveries_count: 35,
       on_time_delivery_pct: 92,
+      delayed_shipments_count: 15,
       leads_opportunities_count: 95,
       won_deals_count: 42,
       open_tickets_count: 18,
@@ -489,6 +494,15 @@
           prevKey: "due_over_60_days_millions",
           higherIsBetter: false,
           footerText: "Overdue > 60d (Up = Red)"
+        }),
+        cardHtml({
+          title: "Collection Rate",
+          sub: "Collected vs overdue ratio",
+          valueText: `${fmtNum(data.collection_rate_pct, 2)}%`,
+          currentNum: data.collection_rate_pct,
+          prevKey: "collection_rate_pct",
+          higherIsBetter: true,
+          footerText: "Collection Eff. (Up = Green)"
         })
       ].join("");
 
@@ -510,6 +524,24 @@
           prevKey: "so_total_gmv_millions",
           higherIsBetter: true,
           footerText: "Gross Sales (Up = Green)"
+        }),
+        cardHtml({
+          title: "Invoiced Orders",
+          sub: "Invoice status = invoiced",
+          valueText: fmtNum(data.invoiced_orders_count, 0),
+          currentNum: data.invoiced_orders_count,
+          prevKey: "invoiced_orders_count",
+          higherIsBetter: true,
+          footerText: "Billed Orders (Up = Green)"
+        }),
+        cardHtml({
+          title: "Average Order Value",
+          sub: "GMV per sales order (K EGP)",
+          valueText: `${fmtNum(data.avg_order_value_k, 2)}K EGP`,
+          currentNum: data.avg_order_value_k,
+          prevKey: "avg_order_value_k",
+          higherIsBetter: true,
+          footerText: "AOV (Up = Green)"
         })
       ].join("");
 
@@ -540,13 +572,22 @@
           prevKey: "open_rfq_count",
           higherIsBetter: false,
           footerText: "Open RFQs (Up = Red)"
+        }),
+        cardHtml({
+          title: "Posted Vendor Bills",
+          sub: "in_invoice / in_refund posted",
+          valueText: fmtNum(data.vendor_bills_count, 0),
+          currentNum: data.vendor_bills_count,
+          prevKey: "vendor_bills_count",
+          higherIsBetter: false,
+          footerText: "Vendor Bills"
         })
       ].join("");
 
       document.getElementById("logisticsGrid").innerHTML = [
         cardHtml({
           title: "Delivered Orders",
-          sub: "Completed deliveries • HORECA + MAS",
+          sub: "State = done • HORECA + MAS",
           valueText: fmtNum(data.delivered_orders_count, 0),
           currentNum: data.delivered_orders_count,
           prevKey: "delivered_orders_count",
@@ -555,7 +596,7 @@
         }),
         cardHtml({
           title: "Pending Deliveries",
-          sub: "Awaiting dispatch or delivery",
+          sub: "Active orders awaiting delivery",
           valueText: fmtNum(data.pending_deliveries_count, 0),
           currentNum: data.pending_deliveries_count,
           prevKey: "pending_deliveries_count",
@@ -564,12 +605,21 @@
         }),
         cardHtml({
           title: "On-Time Delivery",
-          sub: "Delivered on or before due date",
+          sub: "Non-delayed orders ratio",
           valueText: `${fmtNum(data.on_time_delivery_pct, 2)}%`,
           currentNum: data.on_time_delivery_pct,
           prevKey: "on_time_delivery_pct",
           higherIsBetter: true,
           footerText: "OTD Rate (Up = Green)"
+        }),
+        cardHtml({
+          title: "Delayed Shipments",
+          sub: "Delivery date before today",
+          valueText: fmtNum(data.delayed_shipments_count, 0),
+          currentNum: data.delayed_shipments_count,
+          prevKey: "delayed_shipments_count",
+          higherIsBetter: false,
+          footerText: "Delays (Up = Red)"
         })
       ].join("");
 
