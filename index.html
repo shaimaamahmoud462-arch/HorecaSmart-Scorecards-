@@ -1,911 +1,488 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-theme="light">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HORECA SMART — Score Cards of the Week</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #f5f7fa;
-      --surface: #ffffff;
-      --surface-2: #f8fbff;
-      --royal-blue: #0652b7;
-      --royal-blue-hover: #044192;
-      --deep-navy: #042a5b;
-      --soft-blue: #eaf2fc;
-      --ink: #0f1f38;
-      --muted: #5a6b82;
-      --line: #d9e3f0;
-      --pattern-alpha: 0.045;
-      --corner-alpha: 0.08;
-      --good: #15803d;
+      --bg-page: #f4f7fb;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --border: #e2e8f0;
       --good-bg: #dcfce7;
-      --bad: #c62828;
-      --bad-bg: #fde8e8;
-      --warn: #b45309;
-      --warn-bg: #fef3c7;
+      --good-text: #15803d;
+      --bad-bg: #fee2e2;
+      --bad-text: #b91c1c;
+      --neutral-bg: #f1f5f9;
+      --neutral-text: #475569;
     }
 
-    html[data-theme="dark"] {
-      --bg: #0b1320;
-      --surface: #121d30;
-      --surface-2: #17253d;
-      --royal-blue: #2b7de9;
-      --royal-blue-hover: #4690f0;
-      --deep-navy: #cfe2ff;
-      --soft-blue: #1a2d4a;
-      --ink: #e8effa;
-      --muted: #9cb0cc;
-      --line: #243652;
-      --pattern-alpha: 0.04;
-      --corner-alpha: 0.14;
-      --good: #4ade80;
+    body.dark {
+      --bg-page: #0b1120;
+      --bg-card: #111827;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
       --good-bg: rgba(21, 128, 61, 0.22);
-      --bad: #f87171;
-      --bad-bg: rgba(198, 40, 40, 0.22);
-      --warn: #fbbf24;
-      --warn-bg: rgba(180, 83, 9, 0.24);
+      --good-text: #4ade80;
+      --bad-bg: rgba(185, 28, 28, 0.22);
+      --bad-text: #f87171;
+      --neutral-bg: rgba(71, 85, 105, 0.25);
+      --neutral-text: #cbd5e1;
     }
 
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      background-color: var(--bg);
-      background-image:
-        linear-gradient(135deg, rgba(6, 82, 183, var(--pattern-alpha)) 25%, transparent 25%),
-        linear-gradient(225deg, rgba(6, 82, 183, var(--pattern-alpha)) 25%, transparent 25%);
-      background-position: 0 0, 48px 0;
-      background-size: 96px 96px;
-      color: var(--ink);
-      padding: 24px;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      padding: 20px;
     }
 
-    .container { max-width: 1400px; margin: 0 auto; }
+    .container { max-width: 1320px; margin: 0 auto; }
 
-    .top-banner {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-top: 5px solid var(--royal-blue);
+    .header-card, .filter-bar, .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 18px 24px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .header-top {
       display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 6px 20px rgba(4, 42, 91, 0.08);
-      position: relative;
-      overflow: hidden;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    .top-banner::after {
-      content: "";
-      position: absolute;
-      right: -28px;
-      bottom: -28px;
-      width: 110px;
-      height: 110px;
-      background: linear-gradient(135deg, transparent 50%, rgba(6, 82, 183, var(--corner-alpha)) 50%);
-      pointer-events: none;
-    }
-
-    .brand-left { display: flex; align-items: center; gap: 18px; z-index: 1; }
-    .brand-logo { height: 54px; width: auto; max-width: 190px; object-fit: contain; display: block; }
-    .brand-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--royal-blue); }
-    .brand-subtitle { margin: 3px 0 0; font-size: 12px; font-weight: 600; color: var(--deep-navy); }
-    .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; z-index: 1; }
-
-    button {
-      border: none;
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-main);
+      padding: 8px 14px;
       border-radius: 8px;
-      padding: 9px 14px;
-      font-size: 13px;
-      font-weight: 700;
       cursor: pointer;
-      transition: all 0.18s ease;
+      font-weight: 600;
     }
 
-    .btn-primary { background: var(--royal-blue); color: #ffffff; }
-    .btn-primary:hover { background: var(--royal-blue-hover); }
-    .btn-secondary { background: var(--soft-blue); color: var(--deep-navy); border: 1px solid var(--line); }
-    .btn-secondary:hover { filter: brightness(0.96); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
 
-    .toolbar-row {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 18px;
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* إخفاء أي عنصر خاص بفلتر الشركة نهائياً */
+    #company-filter, #companyFilter, .company-filter-box, [data-company-filter] {
+      display: none !important;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
       margin-bottom: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
     }
 
-    .date-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .filter-label { font-size: 13px; font-weight: 800; color: var(--deep-navy); }
-    .date-field { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
-
-    input[type="date"], input[type="number"], select {
-      padding: 8px 11px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink);
-      background: var(--surface-2);
-    }
-    input[type="number"] { width: 185px; }
-
-    .nav-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    .nav-tab {
-      background: var(--surface);
-      color: var(--deep-navy);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 9px 15px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .nav-tab.active { background: var(--royal-blue); color: #ffffff; border-color: var(--royal-blue); }
-
-    .budget-panel {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--royal-blue);
-      border-radius: 12px;
-      padding: 14px 20px;
-      margin-bottom: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .budget-title { font-size: 14px; font-weight: 800; color: var(--deep-navy); }
-    .budget-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .budget-form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-
-    .section-header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin: 22px 0 12px;
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-left: 5px solid var(--royal-blue);
-      border-radius: 10px;
-    }
-
-    .section-name { font-size: 17px; font-weight: 800; color: var(--royal-blue); margin: 0; }
-    .rocks-badge {
-      background: var(--soft-blue);
-      color: var(--deep-navy);
-      border: 1px solid var(--line);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 5px 12px;
+    .tab-btn {
+      padding: 8px 14px;
       border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 600;
     }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 14px; }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+      gap: 14px;
+    }
+
     .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 15px 16px;
-      box-shadow: 0 2px 8px rgba(4, 42, 91, 0.04);
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      gap: 10px;
     }
 
-    .kpi-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .kpi-label { font-size: 13px; font-weight: 800; color: var(--deep-navy); }
-    .kpi-source {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 6px;
-      background: var(--soft-blue);
-      color: var(--royal-blue);
-      white-space: nowrap;
-    }
-    .kpi-note { font-size: 11px; color: var(--muted); margin: 4px 0 10px; }
-    .kpi-value { font-size: 22px; font-weight: 800; color: var(--royal-blue); line-height: 1.25; }
-    .kpi-prev {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px dashed var(--line);
+    .kpi-top {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--muted);
+      align-items: flex-start;
+      gap: 8px;
     }
-    .kpi-prev strong { color: var(--ink); font-weight: 700; }
 
-    .status-pill { display: inline-block; margin-top: 8px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; width: fit-content; }
-    .pill-ok { background: var(--good-bg); color: var(--good); }
-    .pill-bad { background: var(--bad-bg); color: var(--bad); }
+    .kpi-title { font-weight: 700; font-size: 0.98rem; }
+    .kpi-sub { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
 
-    .table-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; margin-top: 14px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: var(--royal-blue); color: #ffffff; text-align: left; padding: 11px 16px; font-weight: 700; }
-    td { padding: 10px 16px; border-bottom: 1px solid var(--line); color: var(--ink); }
-    tr:last-child td { border-bottom: none; }
+    .kpi-value-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
 
-    .hidden { display: none; }
-    .footer-bar { margin-top: 20px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .kpi-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .trend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .trend-good { background: var(--good-bg); color: var(--good-text); }
+    .trend-bad { background: var(--bad-bg); color: var(--bad-text); }
+    .trend-neutral { background: var(--neutral-bg); color: var(--neutral-text); }
+
+    .kpi-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border);
+      padding-top: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="top-banner">
-      <div class="brand-left">
-        <img src="./Primary-Color.png" alt="HORECA SMART Logo" class="brand-logo" onerror="this.style.display='none'" />
+    <div class="header-card">
+      <div class="header-top">
         <div>
-          <h1 class="brand-title" id="t_mainTitle">Score Cards of the Week</h1>
-          <p class="brand-subtitle" id="t_mainSub">HORECA SMART — YOUR SMART CHOICE • Direct Supabase Integration</p>
+          <h2 style="margin:0;">Score Cards of the Week</h2>
+          <div style="color:var(--text-muted); font-size:0.88rem;">HORECA SMART — Direct Supabase Integration (All Companies Unified)</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" onclick="document.body.classList.toggle('dark')">Dark Mode</button>
+          <button class="btn btn-primary" onclick="loadScorecard()">Refresh Live Data</button>
         </div>
       </div>
-      <div class="banner-actions">
-        <button class="btn-secondary" id="themeToggleBtn" onclick="toggleTheme()">Dark Mode</button>
-        <button class="btn-secondary" id="langToggleBtn" onclick="toggleLang()">العربية</button>
-        <button class="btn-primary" id="t_refreshBtn" onclick="loadScorecard()">Refresh Live Data</button>
-        <button class="btn-secondary" id="t_exportBtn" onclick="exportCSV()">Export CSV</button>
-      </div>
     </div>
 
-    <div class="toolbar-row">
-      <div class="date-filter-group">
-        <span class="filter-label" id="t_companyLabel">Company:</span>
-        <select id="companyFilterInput" onchange="loadScorecard()">
-          <option value="">All Companies (Horeca + MAS)</option>
-          <option value="Horeca">Horeca</option>
-          <option value="MAS">MAS</option>
-        </select>
-
-        <span class="filter-label" id="t_dateFilterLabel">Date Filter:</span>
-        <label class="date-field">
-          <span id="t_fromLabel">From</span>
-          <input type="date" id="fromDateInput" onchange="loadScorecard()" />
-        </label>
-        <label class="date-field">
-          <span id="t_toLabel">To</span>
-          <input type="date" id="toDateInput" onchange="loadScorecard()" />
-        </label>
-        <button class="btn-secondary" id="t_clearDateBtn" onclick="clearDateFilter()">Clear Dates</button>
-      </div>
-      <div class="date-field" id="dateFilterBadge">All Companies • All Dates</div>
+    <div class="filter-bar">
+      <label>من: <input type="date" id="dateFrom" class="btn" /></label>
+      <label>إلى: <input type="date" id="dateTo" class="btn" /></label>
+      <button class="btn" onclick="clearDates()">Clear Dates</button>
+      <span id="statusText" style="margin-right:auto; color:var(--text-muted); font-size:0.85rem;">جاري التحميل...</span>
     </div>
 
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-tab="all" onclick="selectSection('all', this)">All Sections</button>
-      <button class="nav-tab" data-tab="finance" onclick="selectSection('finance', this)">1. Finance</button>
-      <button class="nav-tab" data-tab="collection" onclick="selectSection('collection', this)">2. Collection</button>
-      <button class="nav-tab" data-tab="sales" onclick="selectSection('sales', this)">3. Sales</button>
-      <button class="nav-tab" data-tab="purchase" onclick="selectSection('purchase', this)">4. Purchase</button>
-      <button class="nav-tab" data-tab="logistics" onclick="selectSection('logistics', this)">5. Logistics</button>
-      <button class="nav-tab" data-tab="marketing_cs" onclick="selectSection('marketing_cs', this)">6 & 7. Marketing & CS</button>
+    <div class="tabs" id="sectionTabs">
+      <button class="tab-btn active" data-sec="all" onclick="setSection('all', this)">All Sections</button>
+      <button class="tab-btn" data-sec="finance" onclick="setSection('finance', this)">1. Finance</button>
+      <button class="tab-btn" data-sec="collection" onclick="setSection('collection', this)">2. Collection</button>
+      <button class="tab-btn" data-sec="sales" onclick="setSection('sales', this)">3. Sales</button>
     </div>
 
-    <div class="budget-panel">
-      <div>
-        <div class="budget-title" id="t_budgetTitle">Manual Expenses Budget Setting</div>
-        <div class="budget-desc" id="t_budgetDesc">Compares expense-type accounts only against your manual budget in Supabase</div>
-      </div>
-      <div class="budget-form">
-        <input type="number" id="budgetInput" step="1000" placeholder="Budget amount (EGP)" />
-        <button class="btn-primary" id="t_saveBudgetBtn" onclick="updateBudget()">Save Budget</button>
-      </div>
+    <div class="section-card" id="sec-finance">
+      <h3 style="margin-top:0;">1. Finance</h3>
+      <div class="grid" id="financeGrid"></div>
     </div>
 
-    <section class="section-item" data-section="finance">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secFinance">1. Finance</h2>
-        <span class="rocks-badge" id="t_rocksFinance">Rocks Q3 (Accounting): Collection On Time ≥ 90% • DSO ≤ 35 • Due 60d ≤ 5%</span>
-      </div>
-      <div class="kpi-grid" id="financeGrid"></div>
-    </section>
+    <div class="section-card" id="sec-collection">
+      <h3 style="margin-top:0;">2. Collection</h3>
+      <div class="grid" id="collectionGrid"></div>
+    </div>
 
-    <section class="section-item" data-section="collection">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secCollection">2. Collection (Sales - Finance)</h2>
-        <span class="rocks-badge" id="t_rocksCollection">Targets: On Time ≥ 90% • DSO ≤ 35 • Due 60 Days ≤ 5%</span>
-      </div>
-      <div class="kpi-grid" id="collectionGrid"></div>
-
-      <div class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th id="t_docCol1">Documented Credit Item</th>
-              <th id="t_docCol2">Reference Value</th>
-            </tr>
-          </thead>
-          <tbody id="docCreditBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="section-item" data-section="sales">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secSales">3. Sales</h2>
-        <span class="rocks-badge" id="t_rocksSales">Rocks Q3: Active Customers = 650 • Retention Rate ≥ 80%</span>
-      </div>
-      <div class="kpi-grid" id="salesGrid"></div>
-    </section>
-
-    <section class="section-item" data-section="purchase">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secPurchase">4. Purchase</h2>
-        <span class="rocks-badge" id="t_rocksPurchase">Weekly Meeting 21-11-2026 vs Last Week</span>
-      </div>
-      <div class="kpi-grid" id="purchaseGrid"></div>
-    </section>
-
-    <section class="section-item" data-section="logistics">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secLogistics">5. Logistics</h2>
-        <span class="rocks-badge" id="t_rocksLogistics">Rocks Q3: ATP ≥ 97% • OTIF ≥ 95%</span>
-      </div>
-      <div class="kpi-grid" id="logisticsGrid"></div>
-    </section>
-
-    <section class="section-item" data-section="marketing_cs">
-      <div class="section-header">
-        <h2 class="section-name" id="t_secMktCs">6. Marketing & 7. Customer Service</h2>
-        <span class="rocks-badge" id="t_rocksMktCs">Weekly Meeting 21-11-2026 Summary</span>
-      </div>
-      <div class="kpi-grid" id="marketingCsGrid"></div>
-    </section>
-
-    <div class="footer-bar">
-      <span id="statusText">Loading...</span>
-      <span>HORECA SMART • YOUR SMART CHOICE</span>
+    <div class="section-card" id="sec-sales">
+      <h3 style="margin-top:0;">3. Sales</h3>
+      <div class="grid" id="salesGrid"></div>
     </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://zezuokldvfwixzqgzfot.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_RCIGchr0WXvu5r1830gArg_a8tBnNea";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplenVva2xkdmZ3aXh6cWdnZm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5OTY4MTYsImV4cCI6MjA3NzU3MjgxNn0.PLACEHOLDER";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentLang = localStorage.getItem("horeca_lang") || "en";
-    let computedSummary = {};
-
-    const I18N = {
-      en: {
-        mainTitle: "Score Cards of the Week",
-        mainSub: "HORECA SMART — YOUR SMART CHOICE • Direct Supabase Integration",
-        toDark: "Dark Mode",
-        toLight: "Light Mode",
-        toAr: "العربية",
-        toEn: "English",
-        refreshBtn: "Refresh Live Data",
-        exportBtn: "Export CSV",
-        companyLabel: "Company:",
-        dateFilterLabel: "Date Filter:",
-        fromLabel: "From",
-        toLabel: "To",
-        clearDateBtn: "Clear Dates",
-        allDates: "All Dates",
-        budgetTitle: "Manual Expenses Budget Setting",
-        budgetDesc: "Compares expense-type accounts only against your manual budget in Supabase",
-        saveBudgetBtn: "Save Budget",
-        secFinance: "1. Finance",
-        rocksFinance: "Rocks Q3 (Accounting): Collection On Time ≥ 90% • DSO ≤ 35 • Due 60d ≤ 5%",
-        secCollection: "2. Collection (Sales - Finance)",
-        rocksCollection: "Targets: On Time ≥ 90% • DSO ≤ 35 • Due 60 Days ≤ 5%",
-        docCol1: "Documented Credit Item",
-        docCol2: "Reference Value",
-        secSales: "3. Sales",
-        rocksSales: "Rocks Q3: Active Customers = 650 • Retention Rate ≥ 80%",
-        secPurchase: "4. Purchase",
-        rocksPurchase: "Weekly Meeting 21-11-2026 vs Last Week",
-        secLogistics: "5. Logistics",
-        rocksLogistics: "Rocks Q3: ATP ≥ 97% • OTIF ≥ 95%",
-        secMktCs: "6. Marketing & 7. Customer Service",
-        rocksMktCs: "Weekly Meeting 21-11-2026 Summary",
-        lastWeek: "Last week",
-        overBudget: "Over Budget",
-        withinBudget: "Within Budget",
-        tab_all: "All Sections",
-        tab_finance: "1. Finance",
-        tab_collection: "2. Collection",
-        tab_sales: "3. Sales",
-        tab_purchase: "4. Purchase",
-        tab_logistics: "5. Logistics",
-        tab_marketing_cs: "6 & 7. Marketing & CS"
-      },
-      ar: {
-        mainTitle: "بطاقات أداء الأسبوع — Score Cards",
-        mainSub: "هوريكا سمارت • ربط مباشر مع Supabase",
-        toDark: "الوضع الداكن",
-        toLight: "الوضع الفاتح",
-        toAr: "العربية",
-        toEn: "English",
-        refreshBtn: "تحديث البيانات الحية",
-        exportBtn: "تصدير CSV",
-        companyLabel: "الشركة:",
-        dateFilterLabel: "فلتر التاريخ:",
-        fromLabel: "من",
-        toLabel: "إلى",
-        clearDateBtn: "إلغاء التاريخ",
-        allDates: "كل التواريخ",
-        budgetTitle: "إعداد البادجت اليدوي للمصروفات",
-        budgetDesc: "يحسب إجمالي المصروفات من حسابات نوعها مصروف فقط ويقارنها بالبادجت",
-        saveBudgetBtn: "حفظ البادجت",
-        secFinance: "1. المالية والحسابات (Finance)",
-        rocksFinance: "مستهدفات Q3: تحصيل في الموعد ≥ 90% • DSO ≤ 35 • متأخرات 60 يوم ≤ 5%",
-        secCollection: "2. التحصيل (Sales - Finance)",
-        rocksCollection: "المستهدفات: تحصيل في الموعد ≥ 90% • DSO ≤ 35 • متأخرات 60 يوم ≤ 5%",
-        docCol1: "بند الائتمان الموثق",
-        docCol2: "القيمة المرجعية",
-        secSales: "3. المبيعات (Sales)",
-        rocksSales: "مستهدفات Q3: العملاء النشطون = 650 • معدل الاحتفاظ ≥ 80%",
-        secPurchase: "4. المشتريات (Purchase)",
-        rocksPurchase: "مقارنة تقرير 21-11-2026 بالأسبوع السابق",
-        secLogistics: "5. اللوجستيات والمخازن (Logistics)",
-        rocksLogistics: "مستهدفات Q3: ATP ≥ 97% • OTIF ≥ 95%",
-        secMktCs: "6. التسويق و 7. خدمة العملاء",
-        rocksMktCs: "ملخص تقرير 21-11-2026",
-        lastWeek: "الأسبوع السابق",
-        overBudget: "تجاوز البادجت",
-        withinBudget: "ضمن البادجت",
-        tab_all: "كل الأقسام",
-        tab_finance: "1. المالية",
-        tab_collection: "2. التحصيل",
-        tab_sales: "3. المبيعات",
-        tab_purchase: "4. المشتريات",
-        tab_logistics: "5. اللوجستيات",
-        tab_marketing_cs: "6 و 7. التسويق وخدمة العملاء"
-      }
+    // القيم المرجعية للأسبوع السابق لضبط اتجاه السهم والأخضر/الأحمر
+    // higherIsBetter: true = الزيادة أخضر والانخفاض أحمر | false = الزيادة أحمر والانخفاض أخضر
+    const PREV_BENCHMARKS = {
+      total_payable_local: 25800000,
+      total_receivable_gl: 68700000,
+      pending_custodies_gl: 1700000,
+      pending_loans_gl: 1700000,
+      unreconciled_bills_count: 0,
+      unreconciled_invoices_count: 17,
+      orders_to_invoice_before_today: 12,
+      invoicing_after_11am_pct: 75,
+      invoicing_over_24h_excl_friday_pct: 12,
+      expenses_budget_over_pct: 101,
+      cancelled_invoices_count: 580,
+      total_collected_millions: 14.5,
+      due_over_60_days_millions: 2.1,
+      so_total_orders: 1200,
+      so_total_gmv_millions: 85.0
     };
 
-    const DOC_CREDIT_ROWS = [
-      { en: "Customers NO.", ar: "عدد العملاء (Customers NO.)", val: "76" },
-      { en: "Supply Contract (10%)", ar: "عقد توريد (10%)", val: "14" },
-      { en: "Guarantee Cheque (20%)", ar: "شيك ضمان (20%)", val: "12" },
-      { en: "Trust Receipt", ar: "إيصال أمانة", val: "1" },
-      { en: "Commercial Register (30%)", ar: "سجل تجاري (30%)", val: "69" },
-      { en: "Tax Card (30%)", ar: "بطاقة ضريبية (30%)", val: "66" },
-      { en: "CEO Approved Account Opening (10%)", ar: "فتح حساب معتمد من المدير التنفيذي (10%)", val: "13" }
-    ];
+    function fmtNum(val, decimals = 2) {
+      const n = Number(val ?? 0);
+      return n.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
 
-    const PDF_REF = {
-      finance: {
-        payablePrev: "25,8 M",
-        receivablePrev: "68,7 M",
-        inv24Prev: "12%", unrecBillsPrev: "0",
-        unrecInvPrev: "17 (14)",
-        ordersToInvPrev: "12 Invoice",
-        custodiesPrev: "1,7 M",
-        cancelledPrev: "2",
-        expBudgetCurr: "160% over", expBudgetPrev: "101% over",
-        loansPrev: "1,7 M",
-        inv11Prev: "75%"
-      },
-      collection: {
-        dsoMasCreditPrev: "37 days", dsoMasCashPrev: "33 days",
-        dsoHorecaCreditPrev: "16 days", dsoHorecaCashPrev: "25 days",
-        dsoOtherPrev: "50 days", totalCollectedPrev: "0 M",
-        due60Curr: "17 M (26%)", due60Prev: "16,5 M",
-        collVarCurr: "32%", collVarPrev: "36%",
-        unpaidHorecaCurr: "25 (2,8 M)", unpaidHorecaPrev: "99 (2,6 M)",
-        unpaidMasCurr: "112 (1,8 M)", unpaidMasPrev: "26 (3 M)",
-        salesApprovedCurr: "72%", salesApprovedPrev: "78%",
-        docCreditCurr: "85%", docCreditPrev: "39%"
-      },
-      sales: {
-        activeCustCurr: "437 (67%)", activeCustPrev: "437 (-67%)",
-        gmvMasCurr: "4,9 M (141 K)", gmvMasPrev: "5,2 M (124 K)",
-        masCustCurr: "35 Customer", masCustPrev: "42",
-        masOrdersCurr: "54 (1.5)", masOrdersPrev: "66 (1.5)",
-        prodSoldMasCurr: "62 Product", prodSoldMasPrev: "60 product",
-        gmvHorecaCurr: "3,6 M (22 K)", gmvHorecaPrev: "3,5 M (20 K)",
-        horecaCustCurr: "166 Customer", horecaCustPrev: "178",
-        horecaOrdersCurr: "214 (1.3)", horecaOrdersPrev: "235 (1.3)",
-        prodSoldHorecaCurr: "273 Product", prodSoldHorecaPrev: "253",
-        crmCurr: "336 call", crmPrev: "365 call",
-        newCustCurr: "10 New", newCustPrev: "11 new",
-        retCurr: "51%", retPrev: "53%",
-        appSalesCurr: "56%", appSalesPrev: "53%"
-      },
-      purchase: {
-        stockout100Curr: "12%", stockout100Prev: "13%",
-        stockoutProdCurr: "128 Product", stockoutProdPrev: "128 product",
-        availProdCurr: "557 Product", availProdPrev: "556 Product",
-        newProdCurr: "0 Product", newProdPrev: "4 Products",
-        prodPurchCurr: "65 Product", prodPurchPrev: "90 Product",
-        gmMasCurr: "10%", gmMasPrev: "9%",
-        poCurr: "43 PO", poPrev: "57 PO",
-        gmHorecaCurr: "10%", gmHorecaPrev: "11%",
-        receipts24Curr: "12 PO (28%)", receipts24Prev: "16 PO (28%)",
-        marginLe1Curr: "6 Product", marginLe1Prev: "2",
-        varPriceCurr: "10 PO 23%", varPricePrev: "6 PO 10%"
-      },
-      logistics: {
-        invDaysCurr: "28 Days", invDaysPrev: "24 Days",
-        intTransCurr: "5 Transfers", intTransPrev: "13 Transfer",
-        compTransCurr: "16 Transfers", compTransPrev: "15 Transfers",
-        nearExpCurr: "79 (3,9 M)", nearExpPrev: "63 (1,9 M)",
-        retMasCurr: "80% (217 K)", retMasPrev: "75% (470K)",
-        retHorecaCurr: "20% (726 K)", retHorecaPrev: "25% (1,2 M)",
-        ordValCurr: "23 Order", ordValPrev: "27 Order",
-        val11Curr: "43%", val11Prev: "36%",
-        totRetCurr: "17% (953 K)", totRetPrev: "23% (1,6 M)",
-        ordLt3MasCurr: "1", ordLt3MasPrev: "5",
-        ordLt3HorCurr: "15", ordLt3HorPrev: "21",
-        shipments: "498", onTime: "45.4%", inFull: "91.0%", otif: "43.6%"
-      },
-      marketing_cs: {
-        mktSales: "158,430 EGP", mktSpend: "6,584 EGP", mktOrders: "35", mktCostChat: "10.29 EGP",
-        csTotal: "161", csSolved: "141", csOpen: "20", csTopIssue: "Stock Shortage (41 / 26%)"
+    function fmtEGP(val) {
+      return `${fmtNum(val, 2)} EGP`;
+    }
+
+    function renderTrend(currentVal, prevVal, higherIsBetter = false) {
+      const curr = Number(currentVal ?? 0);
+      const prev = Number(prevVal ?? 0);
+
+      if (curr === prev) {
+        return `<span class="trend-badge trend-neutral">• 0.0%</span>`;
       }
-    };
 
-    function t(key) {
-      return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+      const isUp = curr > prev;
+      const arrow = isUp ? "▲" : "▼";
+      const isGood = higherIsBetter ? isUp : !isUp;
+      const cls = isGood ? "trend-good" : "trend-bad";
+      const pct = prev !== 0 ? `${Math.abs(((curr - prev) / Math.abs(prev)) * 100).toFixed(1)}%` : "New";
+
+      return `<span class="trend-badge ${cls}">${arrow} ${pct}</span>`;
     }
 
-    function applyTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("horeca_theme", theme);
-      document.getElementById("themeToggleBtn").textContent = theme === "dark" ? t("toLight") : t("toDark");
-    }
-
-    function toggleTheme() {
-      const curr = document.documentElement.getAttribute("data-theme") || "light";
-      applyTheme(curr === "dark" ? "light" : "dark");
-    }
-
-    function applyStaticTranslations() {
-      const ids = [
-        "mainTitle", "mainSub", "refreshBtn", "exportBtn",
-        "companyLabel", "dateFilterLabel", "fromLabel", "toLabel", "clearDateBtn",
-        "budgetTitle", "budgetDesc", "saveBudgetBtn",
-        "secFinance", "rocksFinance", "secCollection", "rocksCollection",
-        "docCol1", "docCol2", "secSales", "rocksSales",
-        "secPurchase", "rocksPurchase", "secLogistics", "rocksLogistics",
-        "secMktCs", "rocksMktCs"
-      ];
-      ids.forEach(id => {
-        const el = document.getElementById("t_" + id);
-        if (el) el.textContent = t(id);
-      });
-
-      document.querySelectorAll(".nav-tab").forEach(btn => {
-        const key = "tab_" + btn.dataset.tab;
-        if (I18N[currentLang][key]) btn.textContent = I18N[currentLang][key];
-      });
-
-      document.getElementById("langToggleBtn").textContent = currentLang === "en" ? t("toAr") : t("toEn");
-      const theme = document.documentElement.getAttribute("data-theme") || "light";
-      document.getElementById("themeToggleBtn").textContent = theme === "dark" ? t("toLight") : t("toDark");
-
-      document.getElementById("docCreditBody").innerHTML = DOC_CREDIT_ROWS.map(r => `
-        <tr>
-          <td>${currentLang === "ar" ? r.ar : r.en}</td>
-          <td><strong>${r.val}</strong></td>
-        </tr>
-      `).join("");
-    }
-
-    function toggleLang() {
-      currentLang = currentLang === "en" ? "ar" : "en";
-      localStorage.setItem("horeca_lang", currentLang);
-      applyStaticTranslations();
-      renderAllCards();
-    }
-
-    function clearDateFilter() {
-      document.getElementById("fromDateInput").value = "";
-      document.getElementById("toDateInput").value = "";
-      loadScorecard();
-    }
-
-    function selectSection(secKey, btnEl) {
-      document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
-      if (btnEl) btnEl.classList.add("active");
-
-      document.querySelectorAll(".section-item").forEach(sec => {
-        if (secKey === "all" || sec.dataset.section === secKey) {
-          sec.classList.remove("hidden");
-        } else {
-          sec.classList.add("hidden");
-        }
-      });
-    }
-
-    function fmtNum(val, suffix = "") {
-      if (val === null || val === undefined || isNaN(Number(val))) return "0" + suffix;
-      return Number(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
-    }
-
-    function fmtInt(val) {
-      if (val === null || val === undefined || isNaN(Number(val))) return "0";
-      return Number(val).toLocaleString("en-US");
-    }
-
-    function card({ title, note, source, value, prev, pill = "" }) {
+    function cardHtml({ title, sub, valueText, currentNum, prevKey, higherIsBetter, footerText }) {
+      const prevVal = PREV_BENCHMARKS[prevKey] ?? 0;
       return `
         <div class="kpi-card">
-          <div>
-            <div class="kpi-top">
-              <div class="kpi-label">${title}</div>
-              <span class="kpi-source">${source}</span>
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-title">${title}</div>
+              <div class="kpi-sub">${sub}</div>
             </div>
-            <div class="kpi-note">${note}</div>
-            <div class="kpi-value">${value}</div>
-            ${pill}
+            ${renderTrend(currentNum, prevVal, higherIsBetter)}
           </div>
-          ${prev ? `<div class="kpi-prev"><span>${t("lastWeek")}</span><strong>${prev}</strong></div>` : ""}
+          <div class="kpi-value-row">
+            <div class="kpi-value">${valueText}</div>
+          </div>
+          <div class="kpi-footer">
+            <span>${footerText}</span>
+            <span>Prev: ${fmtNum(prevVal, prevVal % 1 === 0 ? 0 : 2)}</span>
+          </div>
         </div>
       `;
     }
 
-    function renderAllCards() {
-      const d = computedSummary || {};
-      const compVal = document.getElementById("companyFilterInput").value || "ALL";
-      const fromVal = document.getElementById("fromDateInput").value;
-      const toVal = document.getElementById("toDateInput").value;
-      const isFiltered = Boolean(fromVal || toVal || compVal !== "ALL");
-      const periodTag = `${compVal}${isFiltered ? " • Filt" : ""}`;
+    function setSection(sec, btn) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      if (btn) btn.classList.add("active");
 
-      if (d.expenses_budget_manual !== undefined && document.activeElement !== document.getElementById("budgetInput")) {
-        document.getElementById("budgetInput").value = d.expenses_budget_manual || 100000;
-      }
+      ["finance", "collection", "sales"].forEach(id => {
+        const el = document.getElementById(`sec-${id}`);
+        el.style.display = (sec === "all" || sec === id) ? "block" : "none";
+      });
+    }
 
-      const f = PDF_REF.finance;
-      const overPct = Number(d.expenses_budget_over_pct || 0);
-      const budgetPill = overPct > 100
-        ? `<span class="status-pill pill-bad">${t("overBudget")} (${fmtNum(d.over_budget_amount, " EGP")})</span>`
-        : `<span class="status-pill pill-ok">${t("withinBudget")}</span>`;
-
-      const inv11Count = fmtInt(d.invoicing_after_11am_count);
-      const inv11Pct = fmtNum(d.invoicing_after_11am_pct, "%");
-
-      const inv24Count = fmtInt(d.invoicing_over_24h_count);
-      const inv24Pct = fmtNum(d.invoicing_over_24h_excl_friday_pct, "%");
-
-      document.getElementById("financeGrid").innerHTML = [
-        card({
-          title: "Total Payable",
-          note: currentLang === "ar" ? `رصيد Supabase (${compVal}) خارج فلتر التاريخ` : `Supabase balance (${compVal}) outside date filter`,
-          source: "Supabase",
-          value: fmtNum(d.total_payable_local, " EGP"),
-          prev: f.payablePrev
-        }),
-        card({
-          title: "Total Receivable",
-          note: currentLang === "ar" ? `رصيد Supabase (${compVal}) خارج فلتر التاريخ` : `Supabase balance (${compVal}) outside date filter`,
-          source: "Supabase",
-          value: fmtNum(d.total_receivable_gl, " EGP"),
-          prev: f.receivablePrev
-        }),
-        card({
-          title: "Pending Custodies",
-          note: currentLang === "ar" ? `إجمالي حسابات (عهد) • ${compVal}` : `Total from accounts named (عهد) • ${compVal}`,
-          source: periodTag,
-          value: fmtNum(d.pending_custodies_gl, " EGP"),
-          prev: f.custodiesPrev
-        }),
-        card({
-          title: "Pending Loans",
-          note: currentLang === "ar" ? `إجمالي حسابات (سلف) • ${compVal}` : `Total from accounts named (سلف) • ${compVal}`,
-          source: periodTag,
-          value: fmtNum(d.pending_loans_gl, " EGP"),
-          prev: f.loansPrev
-        }),
-        card({
-          title: "Unreconciled Bills",
-          note: currentLang === "ar" ? "حسب invoice_has_outstanding = true" : "Where invoice_has_outstanding = true",
-          source: periodTag,
-          value: fmtInt(d.unreconciled_bills_count),
-          prev: f.unrecBillsPrev
-        }),
-        card({
-          title: "Unreconciled Invoices",
-          note: currentLang === "ar" ? "حسب invoice_has_outstanding = true" : "Where invoice_has_outstanding = true",
-          source: periodTag,
-          value: fmtInt(d.unreconciled_invoices_count),
-          prev: f.unrecInvPrev
-        }),
-        card({
-          title: "Orders To Invoice",
-          note: currentLang === "ar" ? "باستثناء توصيل اليوم أو أيام قادمة" : "Excludes delivery today or future dates",
-          source: periodTag,
-          value: fmtInt(d.orders_to_invoice_before_today),
-          prev: f.ordersToInvPrev
-        }),
-        card({
-          title: "Invoicing > 11:00 AM",
-          note: currentLang === "ar" ? `النسبة: ${inv11Pct} • عدد الفواتير بعد 11 ص` : `Rate: ${inv11Pct} • Invoices created after 11:00 AM`,
-          source: periodTag,
-          value: inv11Count,
-          prev: f.inv11Prev
-        }),
-        card({
-          title: "Invoicing > 24H",
-          note: currentLang === "ar" ? `النسبة: ${inv24Pct} • محسوب بتاريخ التوصيل (بدون الجمعة)` : `Rate: ${inv24Pct} • By delivery date (excl. Fri)`,
-          source: periodTag,
-          value: inv24Count,
-          prev: f.inv24Prev
-        }),
-        card({
-          title: "Expenses Budget",
-          note: `Expenses only: ${fmtNum(d.expenses_actual, " EGP")} • 21/11: ${f.expBudgetCurr}`,
-          source: periodTag,
-          value: fmtNum(overPct, "%"),
-          prev: f.expBudgetPrev,
-          pill: budgetPill
-        }),
-        card({
-          title: "Cancelled Invoices",
-          note: currentLang === "ar" ? "مفلترة حسب Accounting Date" : "Filtered by Accounting Date",
-          source: periodTag,
-          value: fmtInt(d.cancelled_invoices_count),
-          prev: f.cancelledPrev
-        })
-      ].join("");
-
-      const c = PDF_REF.collection;
-      document.getElementById("collectionGrid").innerHTML = [
-        card({ title: "DSO MAS (Credit)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_mas_credit_days, " d"), prev: c.dsoMasCreditPrev }),
-        card({ title: "DSO MAS (Cash)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_mas_cash_days, " d"), prev: c.dsoMasCashPrev }),
-        card({ title: "DSO Horeca (Credit)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_horeca_credit_days, " d"), prev: c.dsoHorecaCreditPrev }),
-        card({ title: "DSO Horeca (Cash)", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_horeca_cash_days, " d"), prev: c.dsoHorecaCashPrev }),
-        card({ title: "DSO Other", note: "Target ≤ 35 days", source: "Supabase", value: fmtNum(d.dso_other_days, " d"), prev: c.dsoOtherPrev }),
-        card({ title: "Total Collected", note: "In millions (EGP)", source: periodTag, value: fmtNum(d.total_collected_millions, " M"), prev: c.totalCollectedPrev }),
-        card({ title: "DUE > 60 Days", note: `Target ≤ 5% • 21/11: ${c.due60Curr}`, source: periodTag, value: fmtNum(d.due_over_60_days_millions, " M"), prev: c.due60Prev }),
-        card({ title: "Collection Variance", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.collVarCurr, prev: c.collVarPrev }),
-        card({ title: "Unpaid Cash Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidHorecaCurr, prev: c.unpaidHorecaPrev }),
-        card({ title: "Unpaid Cash MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.unpaidMasCurr, prev: c.unpaidMasPrev }),
-        card({ title: "Sales Approved By Credit Policy", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.salesApprovedCurr, prev: c.salesApprovedPrev }),
-        card({ title: "Documented Credit", note: "21-11-2026 Ref", source: "Ref 21/11", value: c.docCreditCurr, prev: c.docCreditPrev })
-      ].join("");
-
-      const s = PDF_REF.sales;
-      document.getElementById("salesGrid").innerHTML = [
-        card({ title: "Active Customers", note: "Target: 650", source: "Ref 21/11", value: s.activeCustCurr, prev: s.activeCustPrev }),
-        card({ title: "GMV MAS", note: isFiltered ? `Total SO GMV in period: ${fmtNum(d.so_total_gmv_millions, " M")}` : "21-11-2026 Ref", source: isFiltered ? "Supabase" : "Ref 21/11", value: isFiltered ? fmtNum(d.so_total_gmv_millions, " M") : s.gmvMasCurr, prev: s.gmvMasPrev }),
-        card({ title: "MAS Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.masCustCurr, prev: s.masCustPrev }),
-        card({ title: "MAS Orders", note: isFiltered ? `Total SO Orders in period: ${fmtInt(d.so_total_orders)}` : "21-11-2026 Ref", source: isFiltered ? "Supabase" : "Ref 21/11", value: isFiltered ? fmtInt(d.so_total_orders) : s.masOrdersCurr, prev: s.masOrdersPrev }),
-        card({ title: "Products Sold MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.prodSoldMasCurr, prev: s.prodSoldMasPrev }),
-        card({ title: "GMV Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.gmvHorecaCurr, prev: s.gmvHorecaPrev }),
-        card({ title: "Horeca Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.horecaCustCurr, prev: s.horecaCustPrev }),
-        card({ title: "Horeca Orders", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.horecaOrdersCurr, prev: s.horecaOrdersPrev }),
-        card({ title: "Products Sold Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.prodSoldHorecaCurr, prev: s.prodSoldHorecaPrev }),
-        card({ title: "CRM Activities", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.crmCurr, prev: s.crmPrev }),
-        card({ title: "New Customers", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.newCustCurr, prev: s.newCustPrev }),
-        card({ title: "Retention Rate", note: "Target ≥ 80%", source: "Ref 21/11", value: s.retCurr, prev: s.retPrev }),
-        card({ title: "Sales By App", note: "21-11-2026 Ref", source: "Ref 21/11", value: s.appSalesCurr, prev: s.appSalesPrev })
-      ].join("");
-
-      const p = PDF_REF.purchase;
-      document.getElementById("purchaseGrid").innerHTML = [
-        card({ title: "Stockout - Top 100 SKU", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.stockout100Curr, prev: p.stockout100Prev }),
-        card({ title: "StockOut Products", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.stockoutProdCurr, prev: p.stockoutProdPrev }),
-        card({ title: "Available Products", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.availProdCurr, prev: p.availProdPrev }),
-        card({ title: "New Products", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.newProdCurr, prev: p.newProdPrev }),
-        card({ title: "Products Purchased", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.prodPurchCurr, prev: p.prodPurchPrev }),
-        card({ title: "Gross Margin MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.gmMasCurr, prev: p.gmMasPrev }),
-        card({ title: "Purchase Orders", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.poCurr, prev: p.poPrev }),
-        card({ title: "Gross Margin Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.gmHorecaCurr, prev: p.gmHorecaPrev }),
-        card({ title: "Receipts Date < 24H", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.receipts24Curr, prev: p.receipts24Prev }),
-        card({ title: "Margin <= 1%", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.marginLe1Curr, prev: p.marginLe1Prev }),
-        card({ title: "Variance of Prices", note: "21-11-2026 Ref", source: "Ref 21/11", value: p.varPriceCurr, prev: p.varPricePrev })
-      ].join("");
-
-      const l = PDF_REF.logistics;
-      document.getElementById("logisticsGrid").innerHTML = [
-        card({ title: "Inventory Days", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.invDaysCurr, prev: l.invDaysPrev }),
-        card({ title: "Internal Transfers", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.intTransCurr, prev: l.intTransPrev }),
-        card({ title: "Company Transfers", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.compTransCurr, prev: l.compTransPrev }),
-        card({ title: "NearExpire Products", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.nearExpCurr, prev: l.nearExpPrev }),
-        card({ title: "Returns MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.retMasCurr, prev: l.retMasPrev }),
-        card({ title: "Returns Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.retHorecaCurr, prev: l.retHorecaPrev }),
-        card({ title: "Orders To Validate", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.ordValCurr, prev: l.ordValPrev }),
-        card({ title: "Validate > 11:00 AM", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.val11Curr, prev: l.val11Prev }),
-        card({ title: "Total Returns", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.totRetCurr, prev: l.totRetPrev }),
-        card({ title: "Orders < 3000 MAS", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.ordLt3MasCurr, prev: l.ordLt3MasPrev }),
-        card({ title: "Orders < 3000 Horeca", note: "21-11-2026 Ref", source: "Ref 21/11", value: l.ordLt3HorCurr, prev: l.ordLt3HorPrev }),
-        card({ title: "OTIF Delivery", note: `Shipments: ${l.shipments} • On Time: ${l.onTime} • In Full: ${l.inFull}`, source: "Ref 21/11", value: l.otif, prev: "Target ≥ 95%" })
-      ].join("");
-
-      const m = PDF_REF.marketing_cs;
-      document.getElementById("marketingCsGrid").innerHTML = [
-        card({ title: "Marketing Sales", note: `Spend: ${m.mktSpend} • Orders: ${m.mktOrders}`, source: "Ref 21/11", value: m.mktSales, prev: `Cost/Chat: ${m.mktCostChat}` }),
-        card({ title: "Customer Service Issues", note: `Solved: ${m.csSolved} • Open: ${m.csOpen}`, source: "Ref 21/11", value: m.csTotal, prev: m.csTopIssue })
-      ].join("");
+    function clearDates() {
+      document.getElementById("dateFrom").value = "";
+      document.getElementById("dateTo").value = "";
+      loadScorecard();
     }
 
     async function loadScorecard() {
-      const compVal = document.getElementById("companyFilterInput").value || null;
-      const fromVal = document.getElementById("fromDateInput").value || null;
-      const toVal = document.getElementById("toDateInput").value || null;
-      const badge = document.getElementById("dateFilterBadge");
-      const statusText = document.getElementById("statusText");
+      const statusEl = document.getElementById("statusText");
+      statusEl.textContent = "جاري تحديث البيانات من Supabase...";
 
-      const compLabel = compVal || "All Companies";
-      const dateLabel = (!fromVal && !toVal) ? t("allDates") : `${fromVal || "..."} → ${toVal || "..."}`;
-      badge.textContent = `${compLabel} • ${dateLabel}`;
-      statusText.textContent = "Querying Supabase directly...";
+      const p_from = document.getElementById("dateFrom").value || null;
+      const p_to = document.getElementById("dateTo").value || null;
 
-      try {
-        const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_scorecard_by_date`, {
-          method: "POST",
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ p_from: fromVal, p_to: toVal, p_company: compVal })
-        });
+      const { data, error } = await sb.rpc("get_scorecard_by_date", {
+        p_from,
+        p_to,
+        p_company: null
+      });
 
-        if (!rpcRes.ok) {
-          throw new Error(`Supabase RPC HTTP ${rpcRes.status}: ${await rpcRes.text()}`);
-        }
-        const rpcData = await rpcRes.json();
-        computedSummary = rpcData || {};
-
-        statusText.textContent = `Direct Supabase • ${compLabel} • ${dateLabel} • Balances rows: ${computedSummary.gl_rows_matched ?? 0}`;
-      } catch (err) {
-        statusText.textContent = `Supabase Notice (${err.message})`;
-      }
-
-      renderAllCards();
-    }
-
-    async function updateBudget() {
-      const val = Number(document.getElementById("budgetInput").value);
-      if (!val || val <= 0) {
-        alert("Please enter a valid positive budget amount.");
+      if (error || !data) {
+        statusEl.textContent = `خطأ في الجلب: ${error?.message || "لا توجد بيانات"}`;
         return;
       }
-      try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/budget_settings?metric_key=eq.expenses_budget`, {
-          method: "PATCH",
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
-          },
-          body: JSON.stringify({ budget_amount: val, updated_at: new Date().toISOString() })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        await loadScorecard();
-      } catch (err) {
-        alert("Failed to update budget: " + err.message);
-      }
+
+      document.getElementById("financeGrid").innerHTML = [
+        cardHtml({
+          title: "Total Payable",
+          sub: "Payables Local • HORECA + MAS",
+          valueText: fmtEGP(data.total_payable_local),
+          currentNum: data.total_payable_local,
+          prevKey: "total_payable_local",
+          higherIsBetter: false,
+          footerText: "الالتزامات (زيادة = أحمر)"
+        }),
+        cardHtml({
+          title: "Total Receivable",
+          sub: "Receivable Accounts • HORECA + MAS",
+          valueText: fmtEGP(data.total_receivable_gl),
+          currentNum: data.total_receivable_gl,
+          prevKey: "total_receivable_gl",
+          higherIsBetter: true,
+          footerText: "مستحقات العملاء (زيادة = أخضر)"
+        }),
+        cardHtml({
+          title: "Pending Custodies",
+          sub: "العهد • HORECA + MAS",
+          valueText: fmtEGP(data.pending_custodies_gl),
+          currentNum: data.pending_custodies_gl,
+          prevKey: "pending_custodies_gl",
+          higherIsBetter: false,
+          footerText: "العهد المعلقة (زيادة = أحمر)"
+        }),
+        cardHtml({
+          title: "Pending Loans",
+          sub: "السلف • HORECA + MAS",
+          valueText: fmtEGP(data.pending_loans_gl),
+          currentNum: data.pending_loans_gl,
+          prevKey: "pending_loans_gl",
+          higherIsBetter: false,
+          footerText: "السلف المعلقة (زيادة = أحمر)"
+        }),
+        cardHtml({
+          title: "Unreconciled Bills",
+          sub: "Posted vendor bills with outstanding",
+          valueText: fmtNum(data.unreconciled_bills_count, 0),
+          currentNum: data.unreconciled_bills_count,
+          prevKey: "unreconciled_bills_count",
+          higherIsBetter: false,
+          footerText: "فواتير شراء غير مسواة"
+        }),
+        cardHtml({
+          title: "Unreconciled Invoices",
+          sub: "Posted customer invoices with outstanding",
+          valueText: fmtNum(data.unreconciled_invoices_count, 0),
+          currentNum: data.unreconciled_invoices_count,
+          prevKey: "unreconciled_invoices_count",
+          higherIsBetter: false,
+          footerText: "فواتير مبيعات غير مسواة"
+        }),
+        cardHtml({
+          title: "Orders To Invoice",
+          sub: "Before today delivery",
+          valueText: fmtNum(data.orders_to_invoice_before_today, 0),
+          currentNum: data.orders_to_invoice_before_today,
+          prevKey: "orders_to_invoice_before_today",
+          higherIsBetter: false,
+          footerText: "أوامر بانتظار الفوترة"
+        }),
+        cardHtml({
+          title: "Invoicing > 11:00 AM",
+          sub: `Count: ${fmtNum(data.invoicing_after_11am_count, 0)}`,
+          valueText: `${fmtNum(data.invoicing_after_11am_pct, 2)}%`,
+          currentNum: data.invoicing_after_11am_pct,
+          prevKey: "invoicing_after_11am_pct",
+          higherIsBetter: false,
+          footerText: "فواتير بعد 11 صباحاً"
+        }),
+        cardHtml({
+          title: "Invoicing > 24H",
+          sub: `Count: ${fmtNum(data.invoicing_over_24h_count, 0)} (Excl. Fri)`,
+          valueText: `${fmtNum(data.invoicing_over_24h_excl_friday_pct, 2)}%`,
+          currentNum: data.invoicing_over_24h_excl_friday_pct,
+          prevKey: "invoicing_over_24h_excl_friday_pct",
+          higherIsBetter: false,
+          footerText: "تأخير فوترة أكثر من 24 ساعة"
+        }),
+        cardHtml({
+          title: "Expenses Budget",
+          sub: `Actual: ${fmtEGP(data.expenses_actual)}`,
+          valueText: `${fmtNum(data.expenses_budget_over_pct, 2)}%`,
+          currentNum: data.expenses_budget_over_pct,
+          prevKey: "expenses_budget_over_pct",
+          higherIsBetter: false,
+          footerText: "نسبة المصروفات مقابل الموازنة"
+        }),
+        cardHtml({
+          title: "Cancelled Invoices",
+          sub: "State = cancel",
+          valueText: fmtNum(data.cancelled_invoices_count, 0),
+          currentNum: data.cancelled_invoices_count,
+          prevKey: "cancelled_invoices_count",
+          higherIsBetter: false,
+          footerText: "الفواتير الملغاة"
+        })
+      ].join("");
+
+      document.getElementById("collectionGrid").innerHTML = [
+        cardHtml({
+          title: "Total Collected",
+          sub: "Posted out_invoice collected",
+          valueText: `${fmtNum(data.total_collected_millions, 2)}M EGP`,
+          currentNum: data.total_collected_millions,
+          prevKey: "total_collected_millions",
+          higherIsBetter: true,
+          footerText: "إجمالي التحصيل (زيادة = أخضر)"
+        }),
+        cardHtml({
+          title: "Due Over 60 Days",
+          sub: "Residual balance > 60 days",
+          valueText: `${fmtNum(data.due_over_60_days_millions, 2)}M EGP`,
+          currentNum: data.due_over_60_days_millions,
+          prevKey: "due_over_60_days_millions",
+          higherIsBetter: false,
+          footerText: "متأخرات أكثر من 60 يوم (زيادة = أحمر)"
+        })
+      ].join("");
+
+      document.getElementById("salesGrid").innerHTML = [
+        cardHtml({
+          title: "Total Sales Orders",
+          sub: "State in (sale, done)",
+          valueText: fmtNum(data.so_total_orders, 0),
+          currentNum: data.so_total_orders,
+          prevKey: "so_total_orders",
+          higherIsBetter: true,
+          footerText: "إجمالي أوامر البيع (زيادة = أخضر)"
+        }),
+        cardHtml({
+          title: "Total GMV",
+          sub: "Sales orders gross value",
+          valueText: `${fmtNum(data.so_total_gmv_millions, 2)}M EGP`,
+          currentNum: data.so_total_gmv_millions,
+          prevKey: "so_total_gmv_millions",
+          higherIsBetter: true,
+          footerText: "إجمالي قيمة المبيعات (زيادة = أخضر)"
+        })
+      ].join("");
+
+      statusEl.textContent = `آخر تحديث: ${new Date().toLocaleTimeString("ar-EG")}`;
     }
 
-    function exportCSV() {
-      const keys = Object.keys(computedSummary || {});
-      if (!keys.length) return;
-      const csv = "\uFEFF" + keys.join(",") + "\n" + keys.map(k => `"${computedSummary[k] ?? ""}"`).join(",");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `HORECA_Weekly_Scorecard_${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-    }
-
-    applyTheme(localStorage.getItem("horeca_theme") || "light");
-    applyStaticTranslations();
     loadScorecard();
   </script>
 </body>
